@@ -152,7 +152,7 @@ fun SettingsScreen(
                     }
                 }
 
-                // ── Developer Tools ──
+                // ── Personalization ──
                 ElevatedCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -171,12 +171,12 @@ fun SettingsScreen(
                             )
                             Column {
                                 Text(
-                                    text = stringResource(R.string.settings_developer_tools),
+                                    text = stringResource(R.string.settings_personalization_tools),
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
                                     text = stringResource(R.string
-                                        .settings_developer_tools_description),
+                                        .settings_personalization_tools_description),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

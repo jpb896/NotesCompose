@@ -266,10 +266,10 @@
     <string name="brush_designer_section_stock">Stock</string>
     <string name="brush_designer_section_cahier">Cahier</string>
 
-    <!-- Settings: Developer Tools -->
-    <string name="settings_developer_tools">Developer Tools</string>
-    <string name="settings_developer_tools_description">Experimental features and debugging tools.</string>
-    <string name="settings_brush_designer_title">Ink Brush Designer</string>
+    <!-- Settings: Personalization -->
+    <string name="settings_personalization_tools">Personalization</string>
+    <string name="settings_personalization_tools_description">Preferences and tools that can be used to customize your in-app experience</string>
+    <string name="settings_brush_designer_title">Brush Designer</string>
     <string name="settings_brush_designer_description">Create, test, and export custom brush families.</string>
     <string name="settings_launch">Launch</string>
     <string name="settings_graph_ui">Graph UI</string>
@@ -279,7 +279,7 @@
     <string name="bg_name_texture">Name Texture</string>
     <string name="bg_texture_id">Texture ID</string>
     <string name="bg_save">Save</string>
-    <string name="bg_save_to_cahier">Save to Cahier</string>
+    <string name="bg_save_to_cahier">Save</string>
     <string name="bg_brush_name">Brush Name</string>
     <string name="bg_clear_graph">Clear Graph</string>
     <string name="bg_clear_graph_confirmation">Are you sure you want to clear the entire brush graph? This action cannot be undone.</string>
