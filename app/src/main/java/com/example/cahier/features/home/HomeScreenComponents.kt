@@ -208,7 +208,7 @@ fun NoteItem(
         onClick = onClick,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceContainerLow
+            else MaterialTheme.colorScheme.surfaceContainerHigh
         ),
         modifier = modifier.fillMaxWidth()
     ) {
