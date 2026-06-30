@@ -249,7 +249,7 @@ private fun NoteItemContent(
                         contentDescription = stringResource(R.string.note_image_preview),
                         modifier = Modifier
                             .size(40.dp)
-                            .clip(RoundedCornerShape(4.dp)),
+                            .clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop,
                         placeholder = painterResource(id = R.drawable.media)
                     )
