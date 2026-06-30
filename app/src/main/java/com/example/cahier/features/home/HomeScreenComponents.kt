@@ -228,15 +228,6 @@ private fun NoteItemContent(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Text(
-            text = note.title.ifBlank { stringResource(R.string.untitled_note) },
-            style = MaterialTheme.typography.titleMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -253,10 +244,37 @@ private fun NoteItemContent(
                         placeholder = painterResource(id = R.drawable.media)
                     )
                     Spacer(Modifier.width(8.dp))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 16.dp)) {
+                        Text(
+                            text = note.title.ifBlank { stringResource(R.string.untitled_note) },
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                        NoteItemBody(note)
+                    }
                 }
+                } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = note.title.ifBlank { stringResource(R.string.untitled_note) },
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .padding(vertical = 8.dp)
+                    )
+                    NoteItemBody(note)
+                }
+
             }
-            NoteItemBody(note)
         }
+
     }
 }
 
