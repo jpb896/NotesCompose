@@ -66,10 +66,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.ink.strokes.Stroke
 import coil3.compose.AsyncImage
 import com.example.cahier.R
@@ -223,6 +226,7 @@ fun NoteItem(
 }
 
 @Composable
+@ExperimentalMaterial3Api
 private fun NoteItemContent(
     note: Note,
     modifier: Modifier = Modifier
@@ -248,6 +252,8 @@ private fun NoteItemContent(
                         Text(
                             text = note.title.ifBlank { stringResource(R.string.untitled_note) },
                             style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight(500),
+                            fontSize = 22.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
@@ -261,6 +267,8 @@ private fun NoteItemContent(
                     Text(
                         text = note.title.ifBlank { stringResource(R.string.untitled_note) },
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 24.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
