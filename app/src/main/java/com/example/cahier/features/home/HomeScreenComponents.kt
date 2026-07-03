@@ -215,14 +215,16 @@ fun NoteItem(
         ),
         modifier = modifier.fillMaxWidth()
     ) {
-        NoteItemContent(
-            note = note,
-            modifier = Modifier
-                .fillMaxWidth()
-                .createDragAndDropSource(LocalActivity.current, note)
-        )
-        NoteItemActions(onToggleFavorite, note, onDelete, onNewWindow, isCompact)
-    }
+        Row(modifier = modifier.fillMaxWidth()) {
+            NoteItemContent(
+                note = note,
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .createDragAndDropSource(LocalActivity.current, note)
+            )
+            NoteItemActions(onToggleFavorite, note, onDelete, onNewWindow, isCompact)
+        }
+        }
 }
 
 @Composable
@@ -279,7 +281,6 @@ private fun NoteItemContent(
 
             }
         }
-
     }
 }
 
@@ -351,7 +352,7 @@ private fun NoteItemActions(
         ) {
             IconButton(
                 onClick = onToggleFavorite,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(24.dp)
             ) {
                 Icon(
                     painter = if (note.isFavorite)
@@ -375,7 +376,7 @@ private fun NoteItemActions(
         ) {
             IconButton(
                 onClick = onDelete,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(24.dp)
             ) {
                 Icon(
                     painter = painterResource(R.drawable.delete_24px),
@@ -395,7 +396,7 @@ private fun NoteItemActions(
             ) {
                 IconButton(
                     onClick = onNewWindow,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
                         painterResource(R.drawable.outline_open_in_new_24),
