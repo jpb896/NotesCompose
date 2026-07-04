@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -222,7 +223,8 @@ fun NoteItem(
                     .fillMaxWidth(0.8f)
                     .createDragAndDropSource(LocalActivity.current, note)
             )
-            NoteItemActions(onToggleFavorite, note, onDelete, onNewWindow, isCompact)
+            NoteItemActions(onToggleFavorite, note, onDelete, onNewWindow, isCompact, Modifier.fillMaxHeight() .align(
+                Alignment.CenterVertically))
         }
         }
 }
@@ -301,7 +303,8 @@ private fun NoteItemBody(
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 0.dp, top = 0.dp, end = 0.dp, bottom = 8.dp)
                     )
                 }
             }
