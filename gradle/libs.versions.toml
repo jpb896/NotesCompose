@@ -1,5 +1,5 @@
 [versions]
-agp = "9.2.1"
+agp = "9.5.0-alpha04"
 appcompatV7 = "1.7.1"
 coilCompose = "3.4.0"
 foundation = "1.10.5"
