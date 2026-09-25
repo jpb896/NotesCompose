@@ -249,6 +249,9 @@ class DrawingCanvasViewModel @Inject constructor(
     @OptIn(InkInternalOnlyApi::class)
     @SuppressLint("RestrictedApi")
     suspend fun createExportedBitmap(width: Int, height: Int) {
+        // Guard against zero/negative dimensions during orientation changes or layout passes
+        if (width <= 0 || height <= 0) return
+
         val backgroundImageUri = _uiState.value.note.imageUriList?.firstOrNull()
         val strokes = _uiState.value.strokes
 
