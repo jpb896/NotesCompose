@@ -241,6 +241,22 @@ fun JournalHomeScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
+            if (otherNotes.isNotEmpty()) {
+                Text(
+                    text = "All Entries",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                otherNotes.forEach { note ->
+                    CompactJournalRow(
+                        note = note,
+                        onClick = { onNoteClick(note) }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
         }
     }
 }
