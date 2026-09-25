@@ -471,6 +471,10 @@ fun CompactJournalRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val formattedDate = remember(note.dateCreated) {
+        val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+        formatter.format(Date(note.dateCreated))
+    }
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
@@ -506,7 +510,7 @@ fun CompactJournalRow(
             // Details
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Mon, June 16, 2025",
+                    text = formattedDate,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
