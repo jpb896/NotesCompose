@@ -37,6 +37,10 @@
 package com.example.cahier.features.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,18 +57,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -72,6 +80,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -88,147 +97,182 @@ import coil3.compose.AsyncImage
 import com.example.cahier.R
 import com.example.cahier.core.data.Note
 import com.example.cahier.core.data.NoteType
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JournalHomeScreen(
     recentNote: Note?,
     otherNotes: List<Note>,
     bookmarks: List<Note>,
     onNoteClick: (Note) -> Unit,
-    onNewNoteClick: () -> Unit,
+    onNewTextNoteClick: () -> Unit,
+    onNewDrawingNoteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedNavIndex by remember { mutableIntStateOf(0) }
+    var isFabExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Notes",
-                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-                        fontWeight = FontWeight.Medium
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { /* Search */ }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.search_24px),
-                            contentDescription = "Search"
-                        )
-                    }
-                },
-                actions = {
-                    Surface(
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .size(32.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        // Profile Avatar Placeholder
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "J",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
+        modifier = modifier.fillMaxSize(),
+        // Single unified bottom navigation bar
         bottomBar = {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                tonalElevation = 0.dp
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                tonalElevation = 3.dp
             ) {
                 NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.view_list_24px),
-                            contentDescription = "Entries"
-                        )
-                    },
+                    selected = selectedNavIndex == 0,
+                    onClick = { selectedNavIndex = 0 },
+                    icon = { Icon(painterResource(R.drawable.home_24px), contentDescription = "Home") },
+                    label = { Text("Home") }
+                )
+                NavigationBarItem(
+                    selected = selectedNavIndex == 1,
+                    onClick = { selectedNavIndex = 1 },
+                    icon = { Icon(painterResource(R.drawable.format_list_bulleted_24px), contentDescription = "Entries") },
                     label = { Text("Entries") }
                 )
                 NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.insights_24px),
-                            contentDescription = "Insights"
-                        )
-                    },
+                    selected = selectedNavIndex == 2,
+                    onClick = { selectedNavIndex = 2 },
+                    icon = { Icon(painterResource(R.drawable.insights_24px), contentDescription = "Insights") },
                     label = { Text("Insights") }
                 )
-            }
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNewNoteClick,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.edit_24px),
-                    contentDescription = "New Entry"
+                NavigationBarItem(
+                    selected = selectedNavIndex == 3,
+                    onClick = { selectedNavIndex = 3 },
+                    icon = { Icon(painterResource(R.drawable.settings_24px), contentDescription = "Settings") },
+                    label = { Text("Settings") }
                 )
             }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        // Expanded FAB layout allowing Text or Drawing note creation
+        floatingActionButton = {
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                AnimatedVisibility(
+                    visible = isFabExpanded,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Drawing Note Action
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Drawing Note",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            SmallFloatingActionButton(
+                                onClick = {
+                                    isFabExpanded = false
+                                    onNewDrawingNoteClick()
+                                },
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                shape = CircleShape
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_drawing_mode),
+                                    contentDescription = "New Drawing Note",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        // Text Note Action
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Text Note",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            SmallFloatingActionButton(
+                                onClick = {
+                                    isFabExpanded = false
+                                    onNewTextNoteClick()
+                                },
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                shape = CircleShape
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.edit_24px),
+                                    contentDescription = "New Text Note",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Primary FAB toggle button
+                FloatingActionButton(
+                    onClick = { isFabExpanded = !isFabExpanded },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = FloatingActionButtonDefaults.elevation(6.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            id = if (isFabExpanded) R.drawable.close_24px else R.drawable.edit_24px
+                        ),
+                        contentDescription = "Add Journal Entry"
+                    )
+                }
+            }
+        }
     ) { innerPadding ->
-        LazyColumn(
-            modifier = modifier
+        Column(
+            modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
         ) {
-            // "Recent" Hero Card Section
-            if (recentNote != null) {
-                item {
-                    SectionHeader(title = "Recent")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HeroJournalCard(
-                        note = recentNote,
-                        onClick = { onNoteClick(recentNote) }
-                    )
-                }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Recent Entry Section
+            recentNote?.let { note ->
+                Text(
+                    text = "Recent",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                HeroJournalCard(
+                    note = note,
+                    onClick = { onNoteClick(note) }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // "Drafts" / Other Notes Section
-            if (otherNotes.isNotEmpty()) {
-                item {
-                    SectionHeader(title = "Drafts")
-                }
-                items(otherNotes, key = { it.id }) { note ->
-                    CompactJournalRow(
-                        note = note,
-                        onClick = { onNoteClick(note) }
-                    )
-                }
-            }
-
-            // "Bookmarks" Section
+            // Bookmarks Section
             if (bookmarks.isNotEmpty()) {
-                item {
-                    SectionHeader(title = "Bookmarks")
-                }
-                items(bookmarks, key = { it.id }) { note ->
+                Text(
+                    text = "Bookmarks",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                bookmarks.forEach { note ->
                     CompactJournalRow(
                         note = note,
                         onClick = { onNoteClick(note) }
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
@@ -255,6 +299,13 @@ fun HeroJournalCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val monthFormat = remember { SimpleDateFormat("MMM", Locale.getDefault()) }
+    val dayFormat = remember { SimpleDateFormat("d", Locale.getDefault()) }
+
+// Convert your note's timestamp (Long) or Date to formatted strings
+    val noteDate = remember(note.creationDate) { Date(note.creationDate) }
+    val monthText = monthFormat.format(noteDate)
+    val dayText = dayFormat.format(noteDate)
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(28.dp),

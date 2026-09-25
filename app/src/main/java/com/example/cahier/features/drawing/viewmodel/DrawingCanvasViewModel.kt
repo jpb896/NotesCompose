@@ -321,9 +321,11 @@ class DrawingCanvasViewModel @Inject constructor(
         }
     }
 
-    suspend fun updateNoteTitle(newTitle: String) {
+    fun updateNoteTitle(newTitle: String) {
         val updatedNote = _uiState.value.note.copy(title = newTitle)
-        noteRepository.updateNote(updatedNote)
+        viewModelScope.launch {
+            noteRepository.updateNote(updatedNote)
+        }
     }
 
     @UiThread

@@ -422,7 +422,8 @@ private fun ListPaneContent(
         otherNotes = otherNotes,
         bookmarks = bookmarks,
         onNoteClick = onNoteClick,
-        onNewNoteClick = onAddNewTextNote,
+        onNewTextNoteClick = onAddNewTextNote,
+        onNewDrawingNoteClick = onAddNewDrawingNote,
         modifier = modifier.testTag("List")
     )
 }
