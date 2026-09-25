@@ -13,12 +13,7 @@ fun SizeDropdownMenu(
     onSizeChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val sizes = listOf(
-        "Fine" to 2f,
-        "Medium" to 5f,
-        "Bold" to 10f,
-        "Extra Bold" to 20f
-    )
+    val sizes = listOf("Fine" to 2f, "Medium" to 5f, "Bold" to 10f, "Extra Bold" to 20f)
 
     DropdownMenu(
         expanded = expanded,
@@ -28,7 +23,10 @@ fun SizeDropdownMenu(
         sizes.forEach { (label, sizeValue) ->
             DropdownMenuItem(
                 text = { Text(label) },
-                onClick = { onSizeChange(sizeValue) }
+                onClick = {
+                    onSizeChange(sizeValue)
+                    onDismissRequest()
+                }
             )
         }
     }

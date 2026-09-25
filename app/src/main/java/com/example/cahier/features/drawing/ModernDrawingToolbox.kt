@@ -2,25 +2,18 @@ package com.example.cahier.features.drawing
 
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.VerticalDivider
@@ -53,7 +46,8 @@ fun ModernDrawingToolbox(
     onExit: () -> Unit,
     onEditActiveBrush: () -> Unit,
     onColorPickerClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isVertical: Boolean = false
 ) {
     val haptic = LocalHapticFeedback.current
     val isEraserMode by drawingCanvasViewModel.isEraserMode.collectAsStateWithLifecycle()
@@ -62,7 +56,6 @@ fun ModernDrawingToolbox(
     var brushesMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var sizeMenuExpanded by rememberSaveable { mutableStateOf(false) }
 
-    // Floating Capsule Surface
     Surface(
         modifier = modifier.padding(16.dp),
         shape = CircleShape,
@@ -70,21 +63,15 @@ fun ModernDrawingToolbox(
         tonalElevation = 6.dp,
         shadowElevation = 8.dp
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
+        val containerContent = @Composable {
             // --- BRUSH SELECTOR ---
             Box {
                 val brushContainerColor by animateColorAsState(
-                    if (!isEraserMode) MaterialTheme.colorScheme.primaryContainer
-                    else Color.Transparent,
+                    if (!isEraserMode) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                     label = "brushColor"
                 )
                 val brushIconColor by animateColorAsState(
-                    if (!isEraserMode) MaterialTheme.colorScheme.onPrimaryContainer
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    if (!isEraserMode) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                     label = "brushIconColor"
                 )
 
@@ -109,9 +96,8 @@ fun ModernDrawingToolbox(
                 BrushesDropdownMenu(
                     expanded = brushesMenuExpanded,
                     onDismissRequest = { brushesMenuExpanded = false },
-                    onBrushChange = { selectedCustomBrush ->
-                        // Pass the BrushFamily property from CustomBrush
-                        drawingCanvasViewModel.changeBrush(selectedCustomBrush.brushFamily)
+                    onBrushSelected = { selectedFamily ->
+                        drawingCanvasViewModel.changeBrush(selectedFamily)
                         brushesMenuExpanded = false
                     },
                     customBrushes = customBrushes
@@ -158,13 +144,11 @@ fun ModernDrawingToolbox(
 
             // --- ERASER TOGGLE ---
             val eraserContainerColor by animateColorAsState(
-                if (isEraserMode) MaterialTheme.colorScheme.primaryContainer
-                else Color.Transparent,
+                if (isEraserMode) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                 label = "eraserColor"
             )
             val eraserIconColor by animateColorAsState(
-                if (isEraserMode) MaterialTheme.colorScheme.onPrimaryContainer
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                if (isEraserMode) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                 label = "eraserIconColor"
             )
 
@@ -185,12 +169,17 @@ fun ModernDrawingToolbox(
                 )
             }
 
-            VerticalDivider(
-                modifier = Modifier
-                    .height(24.dp)
-                    .padding(horizontal = 4.dp),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
+            if (isVertical) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+            } else {
+                VerticalDivider(
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+            }
 
             // --- UNDO / REDO ---
             IconButton(
@@ -219,6 +208,39 @@ fun ModernDrawingToolbox(
                     painter = painterResource(R.drawable.redo_24px),
                     contentDescription = stringResource(R.string.redo)
                 )
+            }
+
+            // --- CLEAR ALL CONTENT ---
+            IconButton(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    drawingCanvasViewModel.clearScreen()
+                },
+                modifier = Modifier.size(44.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.delete_24px),
+                    contentDescription = "Clear Canvas",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+
+        if (isVertical) {
+            Column(
+                modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                containerContent()
+            }
+        } else {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                containerContent()
             }
         }
     }
