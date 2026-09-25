@@ -248,15 +248,13 @@ fun DrawingNoteCanvasScreen(
                         )
                     }
                 } else {
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(bottom = 16.dp)
                     ) {
                         Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
+                            modifier = Modifier.fillMaxSize(),
                             shape = RoundedCornerShape(28.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerLowest,
                             tonalElevation = 1.dp
@@ -264,8 +262,7 @@ fun DrawingNoteCanvasScreen(
                             drawingCanvasContent()
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
+                        // Floating toolbox centered over the canvas bottom
                         DrawingToolbox(
                             drawingCanvasViewModel = drawingCanvasViewModel,
                             imagePickerLauncher = imagePickerLauncher,
@@ -277,7 +274,9 @@ fun DrawingNoteCanvasScreen(
                             onEditActiveBrush = onEditActiveBrush,
                             isVertical = false,
                             onColorPickerClick = onColorPickerClick,
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 8.dp)
                         )
                     }
                 }
