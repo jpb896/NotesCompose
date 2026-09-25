@@ -16,19 +16,32 @@
  *
  */
 
+/*
+ *
+ *  * Copyright 2025 Google LLC. All rights reserved.
+ *  *
+ *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  * you may not use this file except in compliance with the License.
+ *  * You may obtain a copy of the License at
+ *  *
+ *  *     http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  * See the License for the specific language governing permissions and
+ *  * limitations under the License.
+ *
+ */
+
 package com.example.cahier.features.home
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -40,6 +53,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -47,20 +61,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberTooltipState
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,558 +82,427 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.ink.strokes.Stroke
 import coil3.compose.AsyncImage
 import com.example.cahier.R
 import com.example.cahier.core.data.Note
 import com.example.cahier.core.data.NoteType
-import com.example.cahier.core.ui.theme.CahierAppTheme
-import com.example.cahier.core.utils.createDragAndDropSource
-import com.example.cahier.features.drawing.DrawingDetailThumbnail
-
-@Composable
-fun NoteList(
-    favorites: List<Note>,
-    otherNotes: List<Note>,
-    isCompact: Boolean,
-    selectedNoteId: Long?,
-    onAddNewTextNote: () -> Unit,
-    onAddNewDrawingNote: () -> Unit,
-    onNoteClick: (Note) -> Unit,
-    onToggleFavorite: (Long) -> Unit,
-    onNewWindow: (Note) -> Unit,
-    modifier: Modifier = Modifier,
-    onDeleteNote: (Note) -> Unit = {},
-) {
-    Surface(
-        modifier = modifier.padding(16.dp),
-        shape = RoundedCornerShape(12.dp),
-    ) {
-        Scaffold(
-            floatingActionButton = {
-                val expanded = rememberSaveable { mutableStateOf(false) }
-                CahierFloatingButton(
-                    expanded = expanded,
-                    onTextNoteSelected = {
-                        expanded.value = true
-                        onAddNewTextNote()
-                    },
-                    onDrawingNoteSelected = {
-                        expanded.value = true
-                        onAddNewDrawingNote()
-                    }
-                )
-            },
-            modifier = Modifier
-        ) { innerPadding ->
-            NoteListContent(
-                favorites = favorites,
-                otherNotes = otherNotes,
-                isCompact = isCompact,
-                selectedNoteId = selectedNoteId,
-                onNoteClick = onNoteClick,
-                onDeleteNote = onDeleteNote,
-                onToggleFavorite = onToggleFavorite,
-                onNewWindow = onNewWindow,
-                modifier = Modifier.padding(innerPadding)
-            )
-        }
-    }
-}
-
-@Composable
-private fun NoteListContent(
-    favorites: List<Note>,
-    otherNotes: List<Note>,
-    isCompact: Boolean,
-    selectedNoteId: Long?,
-    onNoteClick: (Note) -> Unit,
-    onDeleteNote: (Note) -> Unit,
-    onToggleFavorite: (Long) -> Unit,
-    onNewWindow: (Note) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyColumn(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        if (favorites.isNotEmpty()) {
-            item {
-                Text(
-                    text = stringResource(R.string.favorites),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-            items(favorites, key = { it.id }) { note ->
-                NoteItem(
-                    note = note,
-                    isCompact = isCompact,
-                    isSelected = selectedNoteId == note.id,
-                    onClick = { onNoteClick(note) },
-                    onDelete = { onDeleteNote(note) },
-                    onToggleFavorite = { onToggleFavorite(note.id) },
-                    onNewWindow = { onNewWindow(note) }
-                )
-            }
-        }
-
-        if (otherNotes.isNotEmpty()) {
-            item {
-                AnimatedVisibility(favorites.isNotEmpty()) {
-                    Text(
-                        text = stringResource(R.string.other_notes),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
-            }
-            items(otherNotes, key = { it.id }) { note ->
-                NoteItem(
-                    note = note,
-                    isCompact = isCompact,
-                    isSelected = selectedNoteId == note.id,
-                    onClick = { onNoteClick(note) },
-                    onDelete = { onDeleteNote(note) },
-                    onToggleFavorite = { onToggleFavorite(note.id) },
-                    onNewWindow = { onNewWindow(note) }
-                )
-            }
-        }
-    }
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NoteItem(
+fun JournalHomeScreen(
+    recentNote: Note?,
+    otherNotes: List<Note>,
+    bookmarks: List<Note>,
+    onNoteClick: (Note) -> Unit,
+    onNewNoteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Notes",
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                        fontWeight = FontWeight.Medium
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { /* Search */ }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.search_24px),
+                            contentDescription = "Search"
+                        )
+                    }
+                },
+                actions = {
+                    Surface(
+                        modifier = Modifier
+                            .padding(end = 16.dp)
+                            .size(32.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        // Profile Avatar Placeholder
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "J",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
+        bottomBar = {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                tonalElevation = 0.dp
+            ) {
+                NavigationBarItem(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.view_list_24px),
+                            contentDescription = "Entries"
+                        )
+                    },
+                    label = { Text("Entries") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.insights_24px),
+                            contentDescription = "Insights"
+                        )
+                    },
+                    label = { Text("Insights") }
+                )
+            }
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNewNoteClick,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.edit_24px),
+                    contentDescription = "New Entry"
+                )
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // "Recent" Hero Card Section
+            if (recentNote != null) {
+                item {
+                    SectionHeader(title = "Recent")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HeroJournalCard(
+                        note = recentNote,
+                        onClick = { onNoteClick(recentNote) }
+                    )
+                }
+            }
+
+            // "Drafts" / Other Notes Section
+            if (otherNotes.isNotEmpty()) {
+                item {
+                    SectionHeader(title = "Drafts")
+                }
+                items(otherNotes, key = { it.id }) { note ->
+                    CompactJournalRow(
+                        note = note,
+                        onClick = { onNoteClick(note) }
+                    )
+                }
+            }
+
+            // "Bookmarks" Section
+            if (bookmarks.isNotEmpty()) {
+                item {
+                    SectionHeader(title = "Bookmarks")
+                }
+                items(bookmarks, key = { it.id }) { note ->
+                    CompactJournalRow(
+                        note = note,
+                        onClick = { onNoteClick(note) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+    )
+}
+
+/**
+ * Large featured card replicating the "Recent" hero card from Pixel Journal.
+ */
+@Composable
+fun HeroJournalCard(
     note: Note,
-    isCompact: Boolean,
-    isSelected: Boolean,
     onClick: () -> Unit,
-    onDelete: () -> Unit,
-    onToggleFavorite: () -> Unit,
-    onNewWindow: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         onClick = onClick,
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
         modifier = modifier.fillMaxWidth()
     ) {
-        Row(modifier = modifier.fillMaxWidth()) {
-            NoteItemContent(
-                note = note,
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .createDragAndDropSource(LocalActivity.current, note)
-            )
-            NoteItemActions(onToggleFavorite, note, onDelete, onNewWindow, isCompact, Modifier.fillMaxHeight() .align(
-                Alignment.CenterVertically))
-        }
-        }
-}
-
-@Composable
-@ExperimentalMaterial3Api
-private fun NoteItemContent(
-    note: Note,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp)
+        Column(
+            modifier = Modifier.padding(20.dp)
         ) {
-            if (!note.imageUriList.isNullOrEmpty()) {
-                note.imageUriList.forEach { imageUri ->
-                    AsyncImage(
-                        model = imageUri,
-                        contentDescription = stringResource(R.string.note_image_preview),
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop,
-                        placeholder = painterResource(id = R.drawable.media)
+            // Date Header + Title Row
+            Row(
+                verticalAlignment = Alignment.Top,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Stacked Date (e.g. Jun 18)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(end = 12.dp)
+                ) {
+                    Text(
+                        text = "Jun",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        Text(
-                            text = note.title.ifBlank { stringResource(R.string.untitled_note) },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight(500),
-                            fontSize = 22.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .padding(vertical = 8.dp)
+                    Text(
+                        text = "18",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // Entry Title
+                Text(
+                    text = note.title.ifBlank { "Untitled Entry" },
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Optional Indicator Badge
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            id = if (note.type == NoteType.Drawing) R.drawable.ic_drawing_mode else R.drawable.bookmark_24px
+                        ),
+                        contentDescription = null,
+                        modifier = Modifier.padding(6.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Asymmetric Media Grid Preview
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Large left image / drawing thumbnail
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier
+                        .weight(1.8f)
+                        .fillMaxHeight()
+                ) {
+                    if (!note.imageUriList.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = note.imageUriList.first(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
                         )
-                        NoteItemBody(note)
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.media),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
-                } else {
-                Column {
-                    Text(
-                        text = note.title.ifBlank { stringResource(R.string.untitled_note) },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 24.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .padding(vertical = 8.dp)
-                    )
-                    NoteItemBody(note)
-                }
 
+                // Stacked right chips (Photos / Maps / Ink previews)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    ) {
+                        // Media thumbnail or drawing preview slot
+                    }
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    ) {
+                        // Location map thumbnail or secondary drawing badge slot
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Embedded "Reflection" Prompt Container
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.auto_awesome_24px),
+                            contentDescription = "Reflection",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Reflection",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = note.text ?: "What a fantastic day! Keep capturing these moments.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Icon(
+                        painter = painterResource(id = R.drawable.expand_more_24px),
+                        contentDescription = "Expand",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
 }
 
+/**
+ * Compact horizontal item replicating the "Drafts" and "Bookmarks" rows.
+ */
 @Composable
-private fun NoteItemBody(
+fun CompactJournalRow(
     note: Note,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        modifier = modifier.fillMaxWidth()
     ) {
-        when (note.type) {
-            NoteType.Text -> {
-                if (!note.text.isNullOrBlank()) {
-                    Text(
-                        text = note.text,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 0.dp, top = 0.dp, end = 0.dp, bottom = 8.dp)
-                    )
-                }
+        Row(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Thumbnail Box
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                modifier = Modifier.size(56.dp)
+            ) {
+                Icon(
+                    painter = painterResource(
+                        id = if (note.type == NoteType.Drawing) R.drawable.ic_drawing_mode else R.drawable.media
+                    ),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
 
-            NoteType.Drawing -> {
-                Image(
-                    painterResource(id = R.drawable.ic_drawing_mode),
-                    contentDescription = stringResource(R.string.drawing_note_indicator),
-                    modifier = Modifier.size(24.dp),
-                )
-                Spacer(Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(14.dp))
+
+            // Details
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.drawing),
+                    text = "Mon, June 16, 2025",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = note.title.ifBlank { "Add title" },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = if (note.type == NoteType.Drawing) "Drawing Entry" else "Add location",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        }
-    }
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun NoteItemActions(
-    onToggleFavorite: () -> Unit,
-    note: Note,
-    onDelete: () -> Unit,
-    onNewWindow: () -> Unit,
-    isCompact: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-    ) {
-        TooltipBox(
-            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                TooltipAnchorPosition.Above
-            ),
-            tooltip = {
-                PlainTooltip {
-                    Text(
-                        if (note.isFavorite) stringResource(R.string.unfavorite)
-                        else stringResource(R.string.favorite)
-                    )
-                }
-            },
-            state = rememberTooltipState(),
-        ) {
-            IconButton(
-                onClick = onToggleFavorite,
-                modifier = Modifier.size(24.dp)
-            ) {
+            // Action Icon
+            IconButton(onClick = { /* Toggle bookmark or options */ }) {
                 Icon(
-                    painter = if (note.isFavorite)
-                        painterResource(id = R.drawable.favorite_24px_filled) else
-                        painterResource(id = R.drawable.favorite_24px),
-                    contentDescription = if (note.isFavorite)
-                        stringResource(R.string.unfavorite) else stringResource(
-                        R.string.add_to_favorites
+                    painter = painterResource(
+                        id = if (note.isFavorite) R.drawable.bookmark_24px_filled else R.drawable.bookmark_24px
                     ),
-                    tint = if (note.isFavorite)
-                        MaterialTheme.colorScheme.primary else LocalContentColor.current
+                    contentDescription = "Bookmark",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-        TooltipBox(
-            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                TooltipAnchorPosition.Above
-            ),
-            tooltip = { PlainTooltip { Text(stringResource(R.string.delete_note)) } },
-            state = rememberTooltipState()
-        ) {
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.delete_24px),
-                    contentDescription = stringResource(R.string.delete_note)
-                )
-            }
-        }
-        AnimatedVisibility(!isCompact) {
-            TooltipBox(
-                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                    TooltipAnchorPosition.Above
-                ),
-                tooltip = {
-                    PlainTooltip { Text(stringResource(R.string.open_new_window)) }
-                },
-                state = rememberTooltipState()
-            ) {
-                IconButton(
-                    onClick = onNewWindow,
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        painterResource(R.drawable.outline_open_in_new_24),
-                        contentDescription = stringResource(R.string.open_new_window)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun NoteDetail(
-    note: Note,
-    strokes: List<Stroke>,
-    onClickToEdit: (Note) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        shape = RoundedCornerShape(12.dp),
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp
-    ) {
-        Spacer(modifier = Modifier.height(16.dp))
-        when (note.type) {
-            NoteType.Text -> {
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .clickable { onClickToEdit(note) }
-                ) {
-                    Text(
-                        text = note.title,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    note.text?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-                }
-            }
-
-            NoteType.Drawing -> {
-                DrawingDetailThumbnail(
-                    strokes = strokes,
-                    onClick = { onClickToEdit(note) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    backgroundImageUri = note.imageUriList?.firstOrNull(),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun CahierFloatingButton(
-    expanded: MutableState<Boolean>,
-    onTextNoteSelected: () -> Unit,
-    onDrawingNoteSelected: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        horizontalAlignment = Alignment.End,
-        modifier = modifier.padding(16.dp)
-    ) {
-        AnimatedVisibility(
-            visible = expanded.value,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 })
-        ) {
-            ExpandedFabContent(
-                onTextNoteSelected = onTextNoteSelected,
-                onDrawingNoteSelected = onDrawingNoteSelected,
-                onCollapse = { expanded.value = false }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        FloatingActionButton(
-            onClick = { expanded.value = !expanded.value },
-            containerColor = MaterialTheme.colorScheme.primary
-        ) {
-            Icon(
-                painter = if (expanded.value)
-                    painterResource(R.drawable.close_24px) else
-                    painterResource(R.drawable.add_24px),
-                contentDescription = stringResource(R.string.add_note)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ExpandedFabContent(
-    onTextNoteSelected: () -> Unit,
-    onDrawingNoteSelected: () -> Unit,
-    onCollapse: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.End,
-        modifier = modifier
-    ) {
-        Column(
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(end = 8.dp)
-        ) {
-            Box(
-                modifier = Modifier.height(56.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(stringResource(R.string.drawing))
-            }
-            Box(
-                modifier = Modifier.height(56.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(stringResource(R.string.text_note))
-            }
-        }
-
-        Column(
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            FloatingActionButton(
-                onClick = {
-                    onDrawingNoteSelected()
-                    onCollapse()
-                },
-                modifier = Modifier.padding(bottom = 8.dp),
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.stylus_note_24px),
-                    contentDescription = stringResource(R.string.drawing_note)
-                )
-            }
-            FloatingActionButton(
-                onClick = {
-                    onTextNoteSelected()
-                    onCollapse()
-                },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.sticky_note_24px),
-                    contentDescription = stringResource(R.string.text_note)
-                )
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun NoteListPreview(
-    modifier: Modifier = Modifier
-) {
-    val sampleNotes = listOf(
-        Note(
-            id = 1,
-            title = "Favorite Note 1",
-            text = "This is a favorite note.",
-            isFavorite = true,
-            type = NoteType.Text
-        ),
-        Note(
-            id = 2,
-            title = "Drawing Note",
-            isFavorite = true,
-            type = NoteType.Drawing
-        ),
-        Note(
-            id = 3,
-            title = "Regular Note",
-            isFavorite = false,
-            text = "This is a regular note.",
-            type = NoteType.Text
-        ),
-    )
-    val (favorites, others) = sampleNotes.partition { it.isFavorite }
-    CahierAppTheme {
-        NoteList(
-            favorites = favorites,
-            otherNotes = others,
-            isCompact = false,
-            selectedNoteId = null,
-            onAddNewTextNote = {},
-            onAddNewDrawingNote = {},
-            onNoteClick = {},
-            onToggleFavorite = {},
-            onNewWindow = {},
-            onDeleteNote = {},
-            modifier = modifier
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun NoteItemPreview(
-    @PreviewParameter(NotePreviewParameterProvider::class) note: Note
-) {
-    CahierAppTheme {
-        NoteItem(
-            note = note,
-            isCompact = false,
-            isSelected = false,
-            onClick = {},
-            onDelete = {},
-            onToggleFavorite = {},
-            onNewWindow = {}
-        )
     }
 }

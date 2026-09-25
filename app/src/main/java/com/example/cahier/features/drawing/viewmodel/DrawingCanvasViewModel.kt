@@ -40,6 +40,7 @@ import androidx.ink.geometry.Intersection.intersects
 import androidx.ink.geometry.MutableParallelogram
 import androidx.ink.geometry.MutableSegment
 import androidx.ink.geometry.MutableVec
+import androidx.ink.nativeloader.InkInternalOnlyApi
 import androidx.ink.rendering.android.canvas.CanvasStrokeRenderer
 import androidx.ink.storage.decode
 import androidx.ink.storage.encode
@@ -245,6 +246,7 @@ class DrawingCanvasViewModel @Inject constructor(
         }
     }
 
+    @OptIn(InkInternalOnlyApi::class)
     @SuppressLint("RestrictedApi")
     suspend fun createExportedBitmap(width: Int, height: Int) {
         val backgroundImageUri = _uiState.value.note.imageUriList?.firstOrNull()

@@ -24,11 +24,24 @@ import androidx.activity.compose.LocalActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
@@ -52,6 +65,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.layout
@@ -59,8 +73,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.ink.strokes.Stroke
@@ -75,6 +91,7 @@ import com.example.cahier.core.ui.CahierUiState
 import com.example.cahier.features.home.viewmodel.HomeScreenViewModel
 import com.example.cahier.features.home.viewmodel.NoteListUiState
 import kotlinx.coroutines.launch
+import com.example.cahier.features.drawing.DrawingDetailThumbnail
 
 private val MinPaneWidth = 250.dp
 
@@ -394,19 +411,18 @@ private fun ListPaneContent(
     onDeleteNote: (Note) -> Unit,
     onNewWindow: (Note) -> Unit,
 ) {
-    val (favorites, others) = noteList.partition { it.isFavorite }
+    val bookmarks = remember(noteList) { noteList.filter { it.isFavorite } }
+    val recentNote = remember(noteList) { noteList.firstOrNull() }
+    val otherNotes = remember(noteList) {
+        if (recentNote != null) noteList.filter { it.id != recentNote.id } else noteList
+    }
 
-    NoteList(
-        favorites = favorites,
-        otherNotes = others,
-        isCompact = isCompact,
-        selectedNoteId = selectedNoteId,
+    JournalHomeScreen(
+        recentNote = recentNote,
+        otherNotes = otherNotes,
+        bookmarks = bookmarks,
         onNoteClick = onNoteClick,
-        onAddNewTextNote = onAddNewTextNote,
-        onAddNewDrawingNote = onAddNewDrawingNote,
-        onDeleteNote = onDeleteNote,
-        onToggleFavorite = onToggleFavorite,
-        onNewWindow = onNewWindow,
+        onNewNoteClick = onAddNewTextNote,
         modifier = modifier.testTag("List")
     )
 }
@@ -418,10 +434,106 @@ private fun DetailPaneContent(
     onClickToEdit: (Note) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    NoteDetail(
-        note = note,
-        strokes = strokes,
-        onClickToEdit = onClickToEdit,
-        modifier = modifier.testTag("Detail")
-    )
+    Surface(
+        modifier = modifier
+            .padding(16.dp)
+            .testTag("Detail"),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable { onClickToEdit(note) }
+                .padding(24.dp)
+        ) {
+            // Expressive Journal Header Row: Date Badge & Action Chip
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "JOURNAL ENTRY",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Today", // Replace with formatted note timestamp if available
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                AssistChip(
+                    onClick = { onClickToEdit(note) },
+                    label = {
+                        Text(
+                            text = if (note.type == NoteType.Drawing) "Edit Drawing" else "Edit Text",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(
+                                id = if (note.type == NoteType.Drawing) R.drawable.ic_drawing_mode else R.drawable.edit_24px
+                            ),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Title
+            Text(
+                text = note.title.ifBlank { stringResource(R.string.untitled_note) },
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Body Content based on Note Type
+            when (note.type) {
+                NoteType.Text -> {
+                    note.text?.let { text ->
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 24.sp
+                        )
+                    }
+                }
+
+                NoteType.Drawing -> {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerLowest
+                    ) {
+                        DrawingDetailThumbnail(
+                            strokes = strokes,
+                            onClick = { onClickToEdit(note) },
+                            modifier = Modifier.fillMaxSize(),
+                            backgroundImageUri = note.imageUriList?.firstOrNull()
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

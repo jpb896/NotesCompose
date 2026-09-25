@@ -1,19 +1,17 @@
 /*
+ * Copyright 2025 Google LLC. All rights reserved.
  *
- *  * Copyright 2025 Google LLC. All rights reserved.
- *  *
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *     http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.example.cahier.features.text
@@ -30,29 +28,44 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -69,25 +82,32 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.FocusState
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.example.cahier.R
 import com.example.cahier.core.data.Note
-import com.example.cahier.core.ui.theme.CahierAppTheme
-import com.example.cahier.core.utils.createDropTarget
-import com.example.cahier.features.text.viewmodel.CanvasScreenViewModel
 import com.example.cahier.core.ui.CahierUiState
 import com.example.cahier.core.ui.FocusedFieldEnum
+import com.example.cahier.core.ui.theme.CahierAppTheme
+import com.example.cahier.core.utils.createDropTarget
 import com.example.cahier.features.home.NotePreviewParameterProvider
+import com.example.cahier.features.text.viewmodel.CanvasScreenViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
@@ -211,13 +231,6 @@ fun NoteCanvasContent(
                 .imePadding()
         ) {
             NoteCanvasTopBar(
-                titleState = titleState,
-                onTitleChange = onTitleChange,
-                titleFocusRequester = titleFocusRequester,
-                onTitleFocusChanged = {
-                    if (it.isFocused)
-                        focusedFieldEnum = FocusedFieldEnum.Title
-                },
                 imagePickerLauncher = imagePickerLauncher,
                 isFavorite = uiState.note.isFavorite,
                 onToggleFavorite = onToggleFavorite,
@@ -226,6 +239,10 @@ fun NoteCanvasContent(
 
             NoteCanvasBody(
                 note = uiState.note,
+                titleState = titleState,
+                onTitleChange = onTitleChange,
+                titleFocusRequester = titleFocusRequester,
+                onTitleFocusChanged = { if (it.isFocused) focusedFieldEnum = FocusedFieldEnum.Title },
                 bodyState = bodyState,
                 onBodyChange = onBodyChange,
                 bodyFocusRequester = bodyFocusRequester,
@@ -236,12 +253,9 @@ fun NoteCanvasContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NoteCanvasTopBar(
-    titleState: TextFieldValue,
-    onTitleChange: (TextFieldValue) -> Unit,
-    titleFocusRequester: FocusRequester,
-    onTitleFocusChanged: (FocusState) -> Unit,
     imagePickerLauncher: ActivityResultLauncher<PickVisualMediaRequest>,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
@@ -250,50 +264,92 @@ private fun NoteCanvasTopBar(
 ) {
     var optionsMenuExpanded by rememberSaveable { mutableStateOf(false) }
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        TextField(
-            value = titleState,
-            onValueChange = onTitleChange,
-            placeholder = { Text(stringResource(R.string.title)) },
-            modifier = Modifier
-                .weight(1f)
-                .focusRequester(titleFocusRequester)
-                .onFocusChanged(onTitleFocusChanged),
-            keyboardOptions = KeyboardOptions(
-                autoCorrectEnabled = true,
-                capitalization = KeyboardCapitalization.Sentences
-            ),
-            textStyle = MaterialTheme.typography.titleLarge
-        )
-
-        Box {
-            IconButton(onClick = { optionsMenuExpanded = true }) {
+    TopAppBar(
+        modifier = modifier,
+        title = { },
+        navigationIcon = {
+            IconButton(
+                onClick = onExit,
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                )
+            ) {
                 Icon(
-                    painter = painterResource(R.drawable.menu_24px),
-                    contentDescription = stringResource(R.string.more_options)
+                    painter = painterResource(id = R.drawable.close_24px),
+                    contentDescription = stringResource(R.string.exit)
                 )
             }
-            NoteCanvasDropdownMenu(
-                expanded = optionsMenuExpanded,
-                onDismissRequest = { optionsMenuExpanded = false },
-                onUploadImage = {
+        },
+        actions = {
+            IconButton(
+                onClick = { /* Formatting options */ },
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                )
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.format_list_bulleted_24px),
+                    contentDescription = null
+                )
+            }
+
+            IconButton(
+                onClick = {
                     imagePickerLauncher.launch(
                         PickVisualMediaRequest(
                             ActivityResultContracts.PickVisualMedia.ImageOnly
                         )
                     )
                 },
-                isFavorite = isFavorite,
-                onToggleFavorite = onToggleFavorite,
-                onExit = onExit
-            )
-        }
-    }
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                )
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.add_24px),
+                    contentDescription = stringResource(R.string.add_image)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = onExit,
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("Save", style = MaterialTheme.typography.labelLarge)
+            }
+
+            Box {
+                IconButton(onClick = { optionsMenuExpanded = true }) {
+                    Icon(
+                        painter = painterResource(R.drawable.more_vert_24px),
+                        contentDescription = stringResource(R.string.more_options)
+                    )
+                }
+                NoteCanvasDropdownMenu(
+                    expanded = optionsMenuExpanded,
+                    onDismissRequest = { optionsMenuExpanded = false },
+                    onUploadImage = {
+                        imagePickerLauncher.launch(
+                            PickVisualMediaRequest(
+                                ActivityResultContracts.PickVisualMedia.ImageOnly
+                            )
+                        )
+                    },
+                    isFavorite = isFavorite,
+                    onToggleFavorite = onToggleFavorite,
+                    onExit = onExit
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background
+        )
+    )
 }
 
 @Composable
@@ -371,6 +427,10 @@ private fun NoteCanvasDropdownMenu(
 @Composable
 private fun NoteCanvasBody(
     note: Note,
+    titleState: TextFieldValue,
+    onTitleChange: (TextFieldValue) -> Unit,
+    titleFocusRequester: FocusRequester,
+    onTitleFocusChanged: (FocusState) -> Unit,
     bodyState: TextFieldValue,
     onBodyChange: (TextFieldValue) -> Unit,
     bodyFocusRequester: FocusRequester,
@@ -378,29 +438,120 @@ private fun NoteCanvasBody(
     onCreateShareableUri: suspend (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(modifier = modifier.fillMaxSize()) {
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp)
+    ) {
+        // Asymmetric Top Media Area
+        item {
+            val imageList = note.imageUriList ?: emptyList()
+            if (imageList.isNotEmpty()) {
+                EditorMediaContainer(imageUris = imageList)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
+        // Title Field ("Add title")
+        item {
+            BasicTextField(
+                value = titleState,
+                onValueChange = onTitleChange,
+                textStyle = TextStyle(
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions(
+                    autoCorrectEnabled = true,
+                    capitalization = KeyboardCapitalization.Sentences
+                ),
+                decorationBox = { innerTextField ->
+                    if (titleState.text.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.title),
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                    innerTextField()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .focusRequester(titleFocusRequester)
+                    .onFocusChanged(onTitleFocusChanged)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Formatted Date Bar
+        item {
+            val formattedDate = remember {
+                SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault()).format(Date())
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(vertical = 4.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.calendar_month_24px),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = formattedDate,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        // Note Content Editor Body
         item {
             note.text?.let {
-                TextField(
+                BasicTextField(
                     value = bodyState,
-                    placeholder = { Text(stringResource(R.string.note)) },
                     onValueChange = onBodyChange,
-                    keyboardOptions =
-                        KeyboardOptions(
-                            autoCorrectEnabled = true,
-                            capitalization = KeyboardCapitalization.Sentences,
-                        ),
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                            .focusRequester(bodyFocusRequester)
-                            .onFocusChanged(onBodyFocusChanged),
-                    textStyle = MaterialTheme.typography.bodyLarge,
+                    textStyle = TextStyle(
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        lineHeight = 26.sp
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    keyboardOptions = KeyboardOptions(
+                        autoCorrectEnabled = true,
+                        capitalization = KeyboardCapitalization.Sentences
+                    ),
+                    decorationBox = { innerTextField ->
+                        if (bodyState.text.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.note),
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                        innerTextField()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .focusRequester(bodyFocusRequester)
+                        .onFocusChanged(onBodyFocusChanged)
                 )
             }
         }
 
+        // Additional Image Attachments Drag-and-Drop List
         items(
             items = note.imageUriList ?: emptyList(),
             key = { it },
@@ -409,6 +560,81 @@ private fun NoteCanvasBody(
                 imageUriString = imageUriString,
                 onCreateShareableUri = onCreateShareableUri,
             )
+        }
+    }
+}
+
+@Composable
+private fun EditorMediaContainer(
+    imageUris: List<String>
+) {
+    Surface(
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier
+                    .weight(1.8f)
+                    .fillMaxHeight()
+            ) {
+                AsyncImage(
+                    model = imageUris.first(),
+                    contentDescription = stringResource(R.string.uploaded_image),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            if (imageUris.size > 1) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    ) {
+                        AsyncImage(
+                            model = imageUris[1],
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    if (imageUris.size > 2) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        ) {
+                            AsyncImage(
+                                model = imageUris[2],
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -437,7 +663,7 @@ private fun NoteImage(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(vertical = 8.dp)
                 .dragAndDropSource { _ ->
                     clipData?.let {
                         DragAndDropTransferData(
@@ -454,7 +680,7 @@ private fun NoteImage(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(vertical = 8.dp),
         )
     }
 }
