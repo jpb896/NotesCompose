@@ -261,136 +261,94 @@ private fun CahierNavigationSuite(
     navigateToBrushGraph: () -> Unit,
     navigateUp: () -> Unit,
 ) {
-    NavigationSuiteScaffold(
-        modifier = modifier,
-        navigationItems = {
-            AppDestinations.entries.forEach { destination ->
-                val isSelected = currentDestination == destination
-                NavigationSuiteItem(
-                    icon = {
-                        Icon(
-                            painter = painterResource(id = destination.icon),
-                            contentDescription = stringResource(
-                                destination.contentDescription
+    // Render content directly without NavigationSuiteScaffold
+    when (currentDestination) {
+        AppDestinations.Home -> {
+            ListDetailPaneScaffold(
+                modifier = modifier.fillMaxSize(),
+                directive = navigator.scaffoldDirective,
+                value = navigator.scaffoldValue,
+                paneExpansionState = paneExpansionState,
+                paneExpansionDragHandle = { state ->
+                    val interactionSource = remember { MutableInteractionSource() }
+                    VerticalDragHandle(
+                        modifier = Modifier
+                            .paneExpansionDraggable(
+                                state,
+                                LocalMinimumInteractiveComponentSize.current,
+                                interactionSource,
                             )
-                        )
-                    },
-                    label = { Text(stringResource(destination.label)) },
-                    selected = isSelected,
-                    onClick = {
-                        if (currentDestination != destination) {
-                            onDestinationChanged(destination)
-                            if (destination != AppDestinations.Home
-                                && navigator.currentDestination?.pane ==
-                                ListDetailPaneScaffoldRole.Detail
-                            ) {
-                                homeScreenViewModel.clearSelection()
+                            .zIndex(2f),
+                    )
+                },
+                listPane = {
+                    ListPaneContent(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .minimumWidthLayout(MinPaneWidth),
+                        noteList = noteList.noteList,
+                        isCompact = isCompact,
+                        selectedNoteId = if (isCompact) null else selectedNoteUIState.note.id,
+                        onNoteClick = {
+                            if (isCompact) {
+                                if (it.type == NoteType.Drawing) {
+                                    navigateToDrawingCanvas(it.id)
+                                } else {
+                                    navigateToCanvas(it.id)
+                                }
+                            } else {
+                                homeScreenViewModel.selectNote(it.id)
                             }
-                        }
-                    }
-                )
-            }
-        },
-        navigationItemVerticalArrangement = Arrangement.Center,
-        content = {
-            when (currentDestination) {
-                AppDestinations.Home -> {
-                    ListDetailPaneScaffold(
-                        modifier = Modifier.fillMaxSize(),
-                        directive = navigator.scaffoldDirective,
-                        value = navigator.scaffoldValue,
-                        paneExpansionState = paneExpansionState,
-                        paneExpansionDragHandle = { state ->
-                            val interactionSource = remember { MutableInteractionSource() }
-                            VerticalDragHandle(
-                                modifier =
-                                    Modifier
-                                        .paneExpansionDraggable(
-                                            state,
-                                            LocalMinimumInteractiveComponentSize
-                                                .current,
-                                            interactionSource,
-                                        )
-                                        .zIndex(2f), // Specify z-index to ensure the drag handle is drawn on top of the panes
-                            )
                         },
-                        listPane = {
-                            ListPaneContent(
+                        onAddNewTextNote = {
+                            homeScreenViewModel.addNote { noteId -> navigateToCanvas(noteId) }
+                        },
+                        onAddNewDrawingNote = {
+                            homeScreenViewModel.addDrawingNote { noteId -> navigateToDrawingCanvas(noteId) }
+                        },
+                        onDeleteNote = { note ->
+                            homeScreenViewModel.deleteNote(note)
+                            navigateUp()
+                        },
+                        onToggleFavorite = { noteId ->
+                            homeScreenViewModel.toggleFavorite(noteId)
+                        },
+                        onNewWindow = { note ->
+                            homeScreenViewModel.openInNewWindow(note)
+                        },
+                    )
+                },
+                detailPane = {
+                    if (!isCompact) {
+                        selectedNoteUIState.note.let { note ->
+                            DetailPaneContent(
                                 modifier = Modifier
                                     .fillMaxSize()
+                                    .zIndex(1f)
                                     .minimumWidthLayout(MinPaneWidth),
-                                noteList = noteList.noteList,
-                                isCompact = isCompact,
-                                selectedNoteId = if (isCompact) null
-                                else selectedNoteUIState.note.id,
-                                onNoteClick = {
-                                    if (isCompact) {
-                                        if (it.type == NoteType.Drawing) {
-                                            navigateToDrawingCanvas(it.id)
-                                        } else {
-                                            navigateToCanvas(it.id)
-                                        }
+                                note = note,
+                                strokes = selectedNoteUIState.strokes,
+                                onClickToEdit = {
+                                    if (note.type == NoteType.Text) {
+                                        navigateToCanvas(note.id)
                                     } else {
-                                        homeScreenViewModel.selectNote(it.id)
+                                        navigateToDrawingCanvas(note.id)
                                     }
-                                },
-                                onAddNewTextNote = {
-                                    homeScreenViewModel.addNote { noteId ->
-                                        navigateToCanvas(noteId)
-                                    }
-                                },
-                                onAddNewDrawingNote = {
-                                    homeScreenViewModel.addDrawingNote { noteId ->
-                                        navigateToDrawingCanvas(noteId)
-                                    }
-                                },
-                                onDeleteNote = { note ->
-                                    homeScreenViewModel.deleteNote(note)
-                                    navigateUp()
-                                },
-                                onToggleFavorite = { noteId ->
-                                    homeScreenViewModel.toggleFavorite(noteId)
-                                },
-                                onNewWindow = { note ->
-                                    homeScreenViewModel.openInNewWindow(note)
-                                },
-                            )
-                        },
-                        detailPane = {
-                            if (!isCompact) {
-                                selectedNoteUIState.note.let { note ->
-                                    DetailPaneContent(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            // Specify z-index to ensure the detail pane content is correctly layered
-                                            .zIndex(1f)
-                                            .minimumWidthLayout(MinPaneWidth),
-                                        note = note,
-                                        strokes = selectedNoteUIState.strokes,
-                                        onClickToEdit = {
-                                            if (note.type == NoteType.Text) {
-                                                navigateToCanvas(note.id)
-                                            } else {
-                                                navigateToDrawingCanvas(note.id)
-                                            }
-                                        }
-                                    )
                                 }
-                            }
+                            )
                         }
-                    )
+                    }
                 }
-
-                AppDestinations.Settings -> {
-                    SettingsScreen(
-                        navigateToBrushGraph = navigateToBrushGraph,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-
+            )
         }
-    )
+
+        AppDestinations.Settings -> {
+            SettingsScreen(
+                navigateToBrushGraph = navigateToBrushGraph,
+                modifier = modifier.fillMaxSize()
+            )
+        }
+    }
 }
 
 

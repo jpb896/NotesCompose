@@ -111,44 +111,10 @@ fun JournalHomeScreen(
     onNewDrawingNoteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedNavIndex by remember { mutableIntStateOf(0) }
     var isFabExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        // Single unified bottom navigation bar
-        bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                tonalElevation = 3.dp
-            ) {
-                NavigationBarItem(
-                    selected = selectedNavIndex == 0,
-                    onClick = { selectedNavIndex = 0 },
-                    icon = { Icon(painterResource(R.drawable.home_24px), contentDescription = "Home") },
-                    label = { Text("Home") }
-                )
-                NavigationBarItem(
-                    selected = selectedNavIndex == 1,
-                    onClick = { selectedNavIndex = 1 },
-                    icon = { Icon(painterResource(R.drawable.format_list_bulleted_24px), contentDescription = "Entries") },
-                    label = { Text("Entries") }
-                )
-                NavigationBarItem(
-                    selected = selectedNavIndex == 2,
-                    onClick = { selectedNavIndex = 2 },
-                    icon = { Icon(painterResource(R.drawable.insights_24px), contentDescription = "Insights") },
-                    label = { Text("Insights") }
-                )
-                NavigationBarItem(
-                    selected = selectedNavIndex == 3,
-                    onClick = { selectedNavIndex = 3 },
-                    icon = { Icon(painterResource(R.drawable.settings_24px), contentDescription = "Settings") },
-                    label = { Text("Settings") }
-                )
-            }
-        },
-        // Expanded FAB layout allowing Text or Drawing note creation
         floatingActionButton = {
             Column(
                 horizontalAlignment = Alignment.End,
