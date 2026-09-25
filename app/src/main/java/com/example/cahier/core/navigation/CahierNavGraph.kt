@@ -16,6 +16,9 @@
 
 package com.example.cahier.core.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.ui.Modifier
@@ -27,11 +30,13 @@ import androidx.navigation.navArgument
 import com.example.cahier.core.ui.CahierTextureBitmapStore
 import com.example.cahier.developer.brushgraph.ui.BrushGraphScreen
 import com.example.cahier.features.drawing.DrawingCanvas
+import com.example.cahier.features.home.CahierTab
 import com.example.cahier.features.home.HomeDestination
 import com.example.cahier.features.home.HomePane
+import com.example.cahier.features.home.SettingsScreen
 import com.example.cahier.features.text.TextNoteCanvasScreen
 
-
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @OptIn(ExperimentalComposeApi::class)
 @Composable
 fun CahierNavHost(
@@ -44,6 +49,7 @@ fun CahierNavHost(
         startDestination = HomeDestination.route,
         modifier = modifier
     ) {
+        // Home Screen
         composable(HomeDestination.route) {
             HomePane(
                 navigateToCanvas = { noteId ->
@@ -57,37 +63,87 @@ fun CahierNavHost(
                 },
                 navigateToBrushGraph = {
                     navController.navigate(BrushGraphDestination.route)
-                },
-
-                )
+                }
+            )
         }
+
+        // Bottom Bar Destination: Entries
+        composable(CahierTab.Entries.route) {
+            HomePane(
+                navigateToCanvas = { noteId ->
+                    navController.navigate("${TextCanvasDestination.route}/$noteId")
+                },
+                navigateToDrawingCanvas = { noteId ->
+                    navController.navigate("${DrawingCanvasDestination.route}/$noteId")
+                },
+                navigateUp = {
+                    navController.navigateUp()
+                },
+                navigateToBrushGraph = {
+                    navController.navigate(BrushGraphDestination.route)
+                }
+            )
+        }
+
+        // Bottom Bar Destination: Insights
+        composable(CahierTab.Insights.route) {
+            HomePane(
+                navigateToCanvas = { noteId ->
+                    navController.navigate("${TextCanvasDestination.route}/$noteId")
+                },
+                navigateToDrawingCanvas = { noteId ->
+                    navController.navigate("${DrawingCanvasDestination.route}/$noteId")
+                },
+                navigateUp = {
+                    navController.navigateUp()
+                },
+                navigateToBrushGraph = {
+                    navController.navigate(BrushGraphDestination.route)
+                }
+            )
+        }
+
+        // Bottom Bar Destination: Settings
+        composable(CahierTab.Settings.route) {
+            SettingsScreen(
+                navigateToBrushGraph = {
+                    navController.navigate(BrushGraphDestination.route)
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // Text Canvas Editor
         composable(
             route = TextCanvasDestination.routeWithArgs,
             arguments = listOf(navArgument(TextCanvasDestination.NOTE_ID_ARG) {
                 type = NavType.LongType
             })
-        ) { navBackStackEntry ->
+        ) {
             TextNoteCanvasScreen(
-                onExit = { navController.navigateUp() },
+                onExit = { navController.navigateUp() }
             )
         }
+
+        // Drawing Canvas Editor
         composable(
             route = DrawingCanvasDestination.routeWithArgs,
             arguments = listOf(navArgument(DrawingCanvasDestination.NOTE_ID_ARG) {
                 type = NavType.LongType
             })
-        ) { navBackStackEntry ->
+        ) {
             DrawingCanvas(
                 navigateUp = { navController.navigateUp() },
                 navigateToBrushGraph = { navController.navigate(BrushGraphDestination.route) }
             )
         }
+
+        // Brush Graph Tool
         composable(route = BrushGraphDestination.route) {
             BrushGraphScreen(
                 onNavigateUp = { navController.navigateUp() }
             )
         }
-
     }
 }
 
@@ -96,7 +152,6 @@ object TextCanvasDestination : NavigationDestination {
     const val NOTE_ID_ARG = "noteId"
     val routeWithArgs = "$route/{$NOTE_ID_ARG}"
 }
-
 
 object DrawingCanvasDestination : NavigationDestination {
     override val route = "drawing_canvas"

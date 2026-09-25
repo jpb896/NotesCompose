@@ -1,6 +1,8 @@
 package com.example.cahier.features.home
 
+import android.os.Build
 import androidx.annotation.DrawableRes
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +45,7 @@ val bottomNavTabs = listOf(
     CahierTab.Settings
 )
 
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @Composable
 fun CahierApp(
     noteId: Long,
@@ -79,7 +82,12 @@ fun CahierApp(
     }
 
     // Hide bottom bar during active drawing/text canvas editing
-    val showBottomBar = currentRoute == HomeDestination.route
+    val showBottomBar = currentRoute in listOf(
+        HomeDestination.route,
+        CahierTab.Entries.route,
+        CahierTab.Insights.route,
+        CahierTab.Settings.route
+    )
 
     Scaffold(
         modifier = modifier,
