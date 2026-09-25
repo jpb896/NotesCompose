@@ -67,6 +67,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -75,8 +76,8 @@ import androidx.compose.ui.zIndex
 import androidx.ink.brush.BrushFamily
 import androidx.ink.brush.StockBrushes
 import com.example.cahier.R
+import com.example.cahier.core.data.CustomBrushEntity
 import com.example.cahier.core.ui.LocalTextureStore
-import com.example.cahier.developer.brushdesigner.data.CustomBrushEntity
 import com.example.cahier.developer.brushgraph.data.TutorialStep
 import com.example.cahier.features.drawing.CustomBrushes
 
@@ -305,26 +306,19 @@ fun PaletteMenu(
 fun CreateNodeSpeedDial(
     isWideScreen: Boolean,
     isAnySidePaneOpen: Boolean,
-    isPreviewExpanded: Boolean,
-    viewportSize: androidx.compose.ui.geometry.Size,
+    previewHeight: Dp,
     modifier: Modifier = Modifier,
     menuContent: @Composable (onClose: () -> Unit) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-    val previewHeight = if (isPreviewExpanded) {
-        PREVIEW_HEIGHT_EXPANDED
-    } else {
-        PREVIEW_HEIGHT_COLLAPSED
-    }
-
     val fabPaddingBottom by
     animateDpAsState(
         targetValue =
             if (!isWideScreen && isAnySidePaneOpen) {
-                (maxOf(previewHeight, INSPECTOR_HEIGHT_PORTRAIT) + 16).dp
+                maxOf(previewHeight, INSPECTOR_HEIGHT_PORTRAIT.dp) + 16.dp
             } else {
-                (previewHeight + 16).dp
+                previewHeight + 16.dp
             },
         label = "fabPaddingBottom",
     )

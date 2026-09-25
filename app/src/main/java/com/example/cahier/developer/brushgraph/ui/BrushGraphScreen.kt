@@ -22,7 +22,8 @@ import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,11 +50,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.ink.brush.BrushFamily
@@ -67,7 +74,6 @@ import androidx.window.core.layout.WindowWidthSizeClass
 import com.example.cahier.R
 import com.example.cahier.core.ui.LocalTextureStore
 import com.example.cahier.core.ui.theme.CahierAppTheme
-import com.example.cahier.developer.brushdesigner.ui.CustomColorPickerDialog
 import com.example.cahier.developer.brushgraph.data.DisplayText
 import com.example.cahier.developer.brushgraph.data.GraphPoint
 import com.example.cahier.developer.brushgraph.data.TutorialAction
@@ -101,7 +107,7 @@ fun BrushGraphScreen(
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     LaunchedEffect(primaryColor) {
         // Only null when we first open the screen, but on rotations this runs again and
-        // testBrushColor will not be null and we don't want to override it.
+        // testBrushColor will not be null, and we don't want to override it.
         if (uiState.testBrushColor == null)
             viewModel.updateTestBrushColor(primaryColor)
     }
@@ -116,6 +122,13 @@ fun BrushGraphScreen(
             onColorSelected = colorPickerOnColorSelected,
             onDismissRequest = { showColorPicker = false }
         )
+    }
+
+    var inspectorBounds by remember { mutableStateOf<Rect?>(null) }
+    var notificationPaneBounds by remember { mutableStateOf<Rect?>(null) }
+
+    val exclusionRects = remember(inspectorBounds, notificationPaneBounds) {
+        listOfNotNull(inspectorBounds, notificationPaneBounds)
     }
 
     // Texture picking logic
@@ -170,7 +183,7 @@ fun BrushGraphScreen(
                                     stream,
                                     maxVersion = Version.DEVELOPMENT
                                 ) { id: String, bitmap: Bitmap? ->
-                                    bitmap?.let { viewModel.loadTexture(id, it) }
+                                    bitmap?.let { bitmap -> viewModel.loadTexture(id, bitmap) }
                                     id
                                 }
                             } catch (e: Exception) {
@@ -190,7 +203,7 @@ fun BrushGraphScreen(
                         viewModel.postDebug(DisplayText.Resource(R.string.bg_msg_brush_loaded_success))
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("BrushGraphWidget", "Failed to load brush", e)
+                    Log.e("BrushGraphWidget", "Failed to load brush", e)
                     viewModel.postDebug(
                         DisplayText.Resource(
                             R.string.bg_err_load_brush_failed_with_msg,
@@ -216,7 +229,7 @@ fun BrushGraphScreen(
                     }
                     viewModel.postDebug(DisplayText.Resource(R.string.bg_msg_brush_exported_success))
                 } catch (e: Exception) {
-                    android.util.Log.e("BrushGraphWidget", "Failed to export brush", e)
+                    Log.e("BrushGraphWidget", "Failed to export brush", e)
                     viewModel.postDebug(
                         DisplayText.Resource(
                             R.string.bg_err_export_brush_failed_with_msg,
@@ -248,38 +261,29 @@ fun BrushGraphScreen(
 
     CahierAppTheme {
         BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-            var viewportSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+            var viewportSize by remember { mutableStateOf(Size.Zero) }
             var showTutorialFinishDialog by remember { mutableStateOf(false) }
 
             val isSidePaneOpen =
                 isWideScreen && (uiState.selectedNodeId != null || uiState.isErrorPaneOpen)
-            val indicatorPaddingEnd by animateDpAsState(
-                targetValue = if (isSidePaneOpen) (INSPECTOR_WIDTH_LANDSCAPE + 16).dp else 16.dp,
-                label = "indicatorPaddingEnd",
-            )
-            val previewHeight = if (uiState.isPreviewExpanded) {
-                PREVIEW_HEIGHT_EXPANDED
+            var previewExpandedHeightDp by remember { mutableStateOf(200.dp) }
+            val currentPreviewHeightDp = if (uiState.isPreviewExpanded) {
+                previewExpandedHeightDp
             } else {
-                PREVIEW_HEIGHT_COLLAPSED
+                PREVIEW_HEIGHT_COLLAPSED.dp
             }
-            val animatedPreviewHeight by animateDpAsState(
-                targetValue = previewHeight.dp,
-                label = "animatedPreviewHeight"
-            )
+            val animatedPreviewHeight =
+                remember { Animatable(currentPreviewHeightDp, Dp.VectorConverter) }
+            LaunchedEffect(uiState.isPreviewExpanded) {
+                val target =
+                    if (uiState.isPreviewExpanded) previewExpandedHeightDp else PREVIEW_HEIGHT_COLLAPSED.dp
+                animatedPreviewHeight.animateTo(target)
+            }
+
+
             val isNodeSelected = uiState.selectedNodeId != null
             val isEdgeSelected = uiState.selectedEdge != null
             val isErrorPaneOpen = uiState.isErrorPaneOpen
-            val isAnySidePaneOpen = isNodeSelected || isEdgeSelected || isErrorPaneOpen
-
-            val trashPaddingBottom by animateDpAsState(
-                targetValue =
-                    if (!isWideScreen && isAnySidePaneOpen) {
-                        (maxOf(previewHeight, INSPECTOR_HEIGHT_PORTRAIT) + 16).dp
-                    } else {
-                        (previewHeight + 16).dp
-                    },
-                label = "trashPaddingBottom",
-            )
 
             val nodeRegistry = remember { NodeRegistry() }
             val issues = uiState.graphIssues
@@ -305,7 +309,7 @@ fun BrushGraphScreen(
                     isNodeSelected = isNodeSelected,
                     isEdgeSelected = isEdgeSelected,
                     isErrorPaneOpen = isErrorPaneOpen,
-                    isPreviewExpanded = uiState.isPreviewExpanded,
+                    previewHeight = animatedPreviewHeight.value,
                     viewportSize = viewportSize,
                     onViewportSizeChange = { viewportSize = it },
                     canvasSlot = { padding ->
@@ -414,10 +418,23 @@ fun BrushGraphScreen(
                                 .align(if (isWideScreen) Alignment.CenterEnd else Alignment.BottomCenter)
                                 .let {
                                     if (isTallAndWide) {
-                                        it.padding(bottom = animatedPreviewHeight)
+                                        it.padding(bottom = animatedPreviewHeight.value)
                                     } else {
                                         it
                                     }
+                                }
+                                .onGloballyPositioned { coordinates: androidx.compose.ui.layout.LayoutCoordinates ->
+                                    val isInspectorOpen =
+                                        selectedNode != null || selectedEdge != null
+                                    inspectorBounds =
+                                        if (isInspectorOpen && coordinates.size.width > 0 && coordinates.size.height > 0) {
+                                            Rect(
+                                                coordinates.positionInWindow(),
+                                                coordinates.size.toSize()
+                                            )
+                                        } else {
+                                            null
+                                        }
                                 },
                         ) {
                             if (selectedNode != null) {
@@ -499,10 +516,21 @@ fun BrushGraphScreen(
                                 .align(if (isWideScreen) Alignment.CenterEnd else Alignment.BottomCenter)
                                 .let {
                                     if (isTallAndWide) {
-                                        it.padding(bottom = animatedPreviewHeight)
+                                        it.padding(bottom = animatedPreviewHeight.value)
                                     } else {
                                         it
                                     }
+                                }
+                                .onGloballyPositioned { coordinates: androidx.compose.ui.layout.LayoutCoordinates ->
+                                    notificationPaneBounds =
+                                        if (uiState.isErrorPaneOpen && coordinates.size.width > 0 && coordinates.size.height > 0) {
+                                            Rect(
+                                                coordinates.positionInWindow(),
+                                                coordinates.size.toSize()
+                                            )
+                                        } else {
+                                            null
+                                        }
                                 },
                         )
                     },
@@ -526,6 +554,7 @@ fun BrushGraphScreen(
                             CollapsiblePreviewPane(
                                 isPreviewExpanded = uiState.isPreviewExpanded,
                                 isInvertedCanvas = uiState.isDarkCanvas,
+                                exclusionRects = exclusionRects,
                                 testAutoUpdateStrokes = uiState.testAutoUpdateStrokes,
                                 brushColor = uiState.testBrushColor ?: primaryColor,
                                 brushSize = uiState.testBrushSize,
@@ -533,6 +562,13 @@ fun BrushGraphScreen(
                                 strokeList = viewModel.strokeList,
                                 strokeRenderer = renderer,
                                 topIssue = topIssue,
+                                currentHeight = animatedPreviewHeight.value,
+                                onHeightDrag = { newHeight ->
+                                    previewExpandedHeightDp = newHeight
+                                    scope.launch {
+                                        animatedPreviewHeight.snapTo(newHeight)
+                                    }
+                                },
                                 onGetNextBrush = { viewModel.brush.value },
                                 onTogglePreviewExpanded = { viewModel.togglePreviewExpanded() },
                                 onClearStrokes = { viewModel.clearStrokes() },
@@ -592,8 +628,7 @@ fun BrushGraphScreen(
                     },
                     fabSlot = { vSize ->
                         val density = LocalDensity.current.density
-                        val previewHeight =
-                            if (uiState.isPreviewExpanded) PREVIEW_HEIGHT_EXPANDED else PREVIEW_HEIGHT_COLLAPSED
+                        val previewHeight = animatedPreviewHeight.value
                         val isInspectorOpen =
                             (uiState.selectedNodeId != null || uiState.selectedEdge != null)
                         val isErrorPaneOpen = uiState.isErrorPaneOpen
@@ -601,7 +636,7 @@ fun BrushGraphScreen(
 
                         val inspectorWidthPx = INSPECTOR_WIDTH_LANDSCAPE * density
                         val inspectorHeightPx = INSPECTOR_HEIGHT_PORTRAIT * density
-                        val previewHeightPx = previewHeight * density
+                        val previewHeightPx = previewHeight.value * density
 
                         val (visibleWidth, visibleHeight) =
                             if (isWideScreen) {
@@ -627,8 +662,7 @@ fun BrushGraphScreen(
                         CreateNodeSpeedDial(
                             isWideScreen = isWideScreen,
                             isAnySidePaneOpen = isAnySidePaneOpen,
-                            isPreviewExpanded = uiState.isPreviewExpanded,
-                            viewportSize = vSize,
+                            previewHeight = animatedPreviewHeight.value,
                             modifier = Modifier.align(Alignment.BottomEnd),
                             menuContent = { onClose ->
                                 data class SpeedDialAction(
@@ -693,7 +727,7 @@ fun BrushGraphScreen(
                             }
                         )
                     },
-                    tutorialSlot = { vSize ->
+                    tutorialSlot = {
                         TutorialOverlayHost(
                             tutorialStep = viewModel.tutorialStep,
                             graph = uiState.graph,
@@ -703,8 +737,7 @@ fun BrushGraphScreen(
                             selectedEdge = uiState.selectedEdge,
                             currentStepIndex = viewModel.currentStepIndex,
                             isWideScreen = isWideScreen,
-                            viewportSize = vSize,
-                            isPreviewExpanded = uiState.isPreviewExpanded,
+                            previewHeight = animatedPreviewHeight.value,
                             onAdvanceTutorial = { viewModel.advanceTutorial(it) },
                             onRegressTutorial = { viewModel.regressTutorial() },
                             onCloseTutorial = { showTutorialFinishDialog = true },
@@ -734,11 +767,10 @@ fun BrushGraphScreen(
                 focusTrigger = uiState.focusTrigger,
                 graph = uiState.graph,
                 zoom = uiState.zoom,
-                isPreviewExpanded = uiState.isPreviewExpanded,
+                previewHeight = animatedPreviewHeight.value,
                 selectedNodeId = uiState.selectedNodeId,
                 updateOffset = { viewModel.updateOffset(GraphPoint(it.x, it.y)) },
                 viewportSize = viewportSize,
-                context = context,
                 isWideScreen = isWideScreen,
                 maxWidthDp = maxWidth,
                 nodeRegistry = nodeRegistry

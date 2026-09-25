@@ -28,6 +28,14 @@ windowCore = "1.5.1"
 ksp = "2.3.11"
 roomCompiler = "2.8.5"
 inputMotionprediction = "1.0.0"
+protobufPlugin = "0.9.4"
+
+# AI Brush Designer CLI
+
+picocli = "4.7.5"
+jline = "3.25.1"
+genai = "1.66.0"
+errorprone = "2.50.0"
 
 #Tests
 mockito = "5.24.0"
@@ -39,6 +47,8 @@ robolectric = "4.17"
 roborazzi = "1.75.0"
 material3 = "1.4.0"
 animation = "1.12.1"
+material3WindowSizeClass = "1.4.0"
+truth = "1.4.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,6 +58,9 @@ androidx-ink-authoring = { module = "androidx.ink:ink-authoring", version.ref = 
 androidx-ink-brush = { module = "androidx.ink:ink-brush", version.ref = "ink" }
 androidx-ink-geometry = { module = "androidx.ink:ink-geometry", version.ref = "ink" }
 androidx-ink-nativeloader = { module = "androidx.ink:ink-nativeloader", version.ref = "ink" }
+androidx-ink-nativeloader-jvm = { module = "androidx.ink:ink-nativeloader-jvm", version.ref = "ink" }
+androidx-ink-brush-jvm = { module = "androidx.ink:ink-brush-jvm", version.ref = "ink" }
+androidx-ink-storage-jvm = { module = "androidx.ink:ink-storage-jvm", version.ref = "ink" }
 androidx-ink-rendering = { module = "androidx.ink:ink-rendering", version.ref = "ink" }
 androidx-ink-strokes = { module = "androidx.ink:ink-strokes", version.ref = "ink" }
 androidx-ink-storage = { module = "androidx.ink:ink-storage", version.ref = "ink" }
@@ -87,6 +100,13 @@ androidx-ink-authoring-compose = { group = "androidx.ink", name = "ink-authoring
 androidx-ink-brush-compose = { group = "androidx.ink", name = "ink-brush-compose", version.ref = "ink" }
 androidx-ink-geometry-compose = { group = "androidx.ink", name = "ink-geometry-compose", version.ref = "ink" }
 
+# AI Brush Designer CLI
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesTest" }
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+jline = { module = "org.jline:jline", version.ref = "jline" }
+google-genai = { module = "com.google.genai:google-genai", version.ref = "genai" }
+errorprone-annotations = { module = "com.google.errorprone:error_prone_annotations", version.ref = "errorprone" }
+
 #Tests
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
@@ -101,6 +121,8 @@ roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", versi
 roborazzi-compose = { group = "io.github.takahirom.roborazzi", name = "roborazzi-compose", version.ref = "roborazzi" }
 roborazzi-rule = { group = "io.github.takahirom.roborazzi", name = "roborazzi-junit-rule", version.ref = "roborazzi" }
 protobuf-javalite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobufJavalite" }
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobufJavalite" }
+truth = { module = "com.google.truth:truth", version.ref = "truth" }
 compose-color-picker-android = { module = "com.godaddy.android.colorpicker:compose-color-picker-android", version.ref = "composeColorPickerAndroid" }
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
@@ -110,5 +132,8 @@ androidx-compose-animation = { group = "androidx.compose.animation", name = "ani
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
+jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }

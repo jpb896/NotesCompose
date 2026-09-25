@@ -20,6 +20,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowInsetsController
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -85,10 +86,11 @@ class MainActivity : ComponentActivity() {
                 androidx.compose.runtime.CompositionLocalProvider(LocalTextureStore provides textureStore) {
                     Surface(
                         modifier = Modifier
-                        .fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    CahierApp(noteId = noteId,
+                            .fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        CahierApp(
+                            noteId = noteId,
                             noteType = noteType,
                             navigateToBrushGraph = navigateToBrushGraph,
                             onNavigateToBrushGraphHandled = {
@@ -112,6 +114,10 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
 
+    private fun toastIntent(toastMessage: Int) {
+        Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show()
+    }
+
     private fun handleIntent(intent: Intent) {
         val noteId = intent.getLongExtra(AppArgs.NOTE_ID_KEY, -1)
         val noteType = IntentCompat.getParcelableExtra(
@@ -132,16 +138,19 @@ class MainActivity : ComponentActivity() {
             intent.action = null
             intent.data = null
             lifecycleScope.launch {
+                val toastMessage: Int
+                navigateToBrushGraphState.value = true
                 val repo = repository.get()
                 val success = repo.importBrushFromUri(uri.toString())
                 if (success) {
                     android.util.Log.d("MainActivity", "Import brush SUCCESS")
-                    navigateToBrushGraphState.value = true
-                    repo.postDebug(DisplayText.Resource(com.example.cahier.R.string.bg_msg_brush_loaded_success))
+                    toastMessage = R.string.bg_msg_brush_loaded_success
                 } else {
                     android.util.Log.e("MainActivity", "Import brush FAILED")
-                    repo.postDebug(DisplayText.Resource(com.example.cahier.R.string.bg_err_load_brush))
+                    toastMessage = R.string.bg_err_load_brush
                 }
+                repo.postDebug(DisplayText.Resource(toastMessage))
+                toastIntent(toastMessage)
             }
         }
     }
