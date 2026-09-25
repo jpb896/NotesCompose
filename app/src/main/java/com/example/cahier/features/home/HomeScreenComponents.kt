@@ -303,7 +303,7 @@ fun HeroJournalCard(
     val dayFormat = remember { SimpleDateFormat("d", Locale.getDefault()) }
 
 // Convert your note's timestamp (Long) or Date to formatted strings
-    val noteDate = remember(note.creationDate) { Date(note.creationDate) }
+    val noteDate = remember(note.dateCreated) { Date(note.dateCreated) }
     val monthText = monthFormat.format(noteDate)
     val dayText = dayFormat.format(noteDate)
     Card(
@@ -322,18 +322,17 @@ fun HeroJournalCard(
                 verticalAlignment = Alignment.Top,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Stacked Date (e.g. Jun 18)
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(end = 12.dp)
                 ) {
                     Text(
-                        text = "Jun",
+                        text = monthText,
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "18",
+                        text = dayText,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
