@@ -28,13 +28,13 @@ windowCore = "1.5.1"
 ksp = "2.3.11"
 roomCompiler = "2.8.5"
 inputMotionprediction = "1.0.0"
-protobufPlugin = "0.9.4"
+protobufPlugin = "0.10.0"
 
 # AI Brush Designer CLI
 
-picocli = "4.7.5"
-jline = "3.25.1"
-genai = "1.66.0"
+picocli = "4.7.7"
+jline = "4.4.6"
+genai = "1.73.0"
 errorprone = "2.50.0"
 
 #Tests
