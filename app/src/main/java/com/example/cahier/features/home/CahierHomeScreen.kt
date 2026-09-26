@@ -19,6 +19,7 @@ package com.example.cahier.features.home
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.annotation.DrawableRes
@@ -471,7 +472,6 @@ private fun DetailPaneContent(
                         )
                     }
                 }
-
                 NoteType.Drawing -> {
                     Surface(
                         modifier = Modifier
@@ -481,10 +481,9 @@ private fun DetailPaneContent(
                         color = MaterialTheme.colorScheme.surfaceContainerLowest
                     ) {
                         DrawingDetailThumbnail(
-                            strokes = strokes,
+                            strokesData = note.strokesData,
                             onClick = { onClickToEdit(note) },
-                            modifier = Modifier.fillMaxSize(),
-                            backgroundImageUri = note.imageUriList?.firstOrNull()
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }

@@ -97,6 +97,7 @@ import coil3.compose.AsyncImage
 import com.example.cahier.R
 import com.example.cahier.core.data.Note
 import com.example.cahier.core.data.NoteType
+import com.example.cahier.features.drawing.DrawingDetailThumbnail
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -366,6 +367,7 @@ fun HeroJournalCard(
                         .weight(1.8f)
                         .fillMaxHeight()
                 ) {
+                    if (note.type != NoteType.Drawing) {
                     if (!note.imageUriList.isNullOrEmpty()) {
                         AsyncImage(
                             model = note.imageUriList.first(),
@@ -379,6 +381,13 @@ fun HeroJournalCard(
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    } else {
+                        DrawingDetailThumbnail(
+                            strokesData = note.strokesData,
+                            modifier = Modifier.fillMaxSize(),
+                            onClick = {}
                         )
                     }
                 }

@@ -97,6 +97,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.window.core)
     implementation(libs.androidx.foundation)
+    implementation(libs.ink.strokes)
 
     // Adaptive layouts dependencies
     implementation(libs.material3.adaptive.navigation.suite.android)
