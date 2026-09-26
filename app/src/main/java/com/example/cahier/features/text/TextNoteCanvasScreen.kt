@@ -28,7 +28,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.Arrangement
@@ -47,7 +46,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -246,8 +244,7 @@ fun NoteCanvasContent(
                 bodyState = bodyState,
                 onBodyChange = onBodyChange,
                 bodyFocusRequester = bodyFocusRequester,
-                onBodyFocusChanged = { if (it.isFocused) focusedFieldEnum = FocusedFieldEnum.Body },
-                onCreateShareableUri = onCreateShareableUri,
+                onBodyFocusChanged = { if (it.isFocused) focusedFieldEnum = FocusedFieldEnum.Body }
             )
         }
     }
@@ -435,7 +432,6 @@ private fun NoteCanvasBody(
     onBodyChange: (TextFieldValue) -> Unit,
     bodyFocusRequester: FocusRequester,
     onBodyFocusChanged: (FocusState) -> Unit,
-    onCreateShareableUri: suspend (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -443,7 +439,7 @@ private fun NoteCanvasBody(
             .fillMaxSize()
             .padding(horizontal = 20.dp)
     ) {
-        // Asymmetric Top Media Area
+        // Dynamic Media Container
         item {
             val imageList = note.imageUriList ?: emptyList()
             if (imageList.isNotEmpty()) {
@@ -550,17 +546,6 @@ private fun NoteCanvasBody(
                 )
             }
         }
-
-        // Additional Image Attachments Drag-and-Drop List
-        items(
-            items = note.imageUriList ?: emptyList(),
-            key = { it },
-        ) { imageUriString ->
-            NoteImage(
-                imageUriString = imageUriString,
-                onCreateShareableUri = onCreateShareableUri,
-            )
-        }
     }
 }
 
@@ -575,40 +560,50 @@ private fun EditorMediaContainer(
             .fillMaxWidth()
             .height(200.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier
-                    .weight(1.8f)
-                    .fillMaxHeight()
-            ) {
-                AsyncImage(
-                    model = imageUris.first(),
-                    contentDescription = stringResource(R.string.uploaded_image),
-                    contentScale = ContentScale.Crop,
+        when (imageUris.size) {
+            1 -> {
+                // Single image -> full width
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     modifier = Modifier.fillMaxSize()
-                )
+                ) {
+                    AsyncImage(
+                        model = imageUris.first(),
+                        contentDescription = stringResource(R.string.uploaded_image),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
-
-            if (imageUris.size > 1) {
-                Column(
+            2 -> {
+                // Two images -> 50/50 side by side
+                Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .fillMaxSize()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         modifier = Modifier
-                            .fillMaxWidth()
                             .weight(1f)
+                            .fillMaxHeight()
+                    ) {
+                        AsyncImage(
+                            model = imageUris[0],
+                            contentDescription = stringResource(R.string.uploaded_image),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
                     ) {
                         AsyncImage(
                             model = imageUris[1],
@@ -617,9 +612,54 @@ private fun EditorMediaContainer(
                             modifier = Modifier.fillMaxSize()
                         )
                     }
-                    if (imageUris.size > 2) {
+                }
+            }
+            else -> {
+                // 3+ images -> asymmetric grid
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        modifier = Modifier
+                            .weight(1.8f)
+                            .fillMaxHeight()
+                    ) {
+                        AsyncImage(
+                            model = imageUris.first(),
+                            contentDescription = stringResource(R.string.uploaded_image),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Surface(
-                            shape = CircleShape,
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        ) {
+                            AsyncImage(
+                                model = imageUris[1],
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             modifier = Modifier
                                 .fillMaxWidth()

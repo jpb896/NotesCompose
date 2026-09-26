@@ -1,37 +1,17 @@
 /*
+ * Copyright 2025 Google LLC. All rights reserved.
  *
- *  * Copyright 2025 Google LLC. All rights reserved.
- *  *
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *     http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- */
-
-/*
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  * Copyright 2025 Google LLC. All rights reserved.
- *  *
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *     http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.example.cahier.features.home
@@ -45,7 +25,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -55,44 +34,33 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.cahier.R
 import com.example.cahier.core.data.Note
@@ -262,17 +230,6 @@ fun JournalHomeScreen(
     }
 }
 
-@Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
-    )
-}
-
 /**
  * Large featured card replicating the "Recent" hero card from Pixel Journal.
  */
@@ -285,10 +242,11 @@ fun HeroJournalCard(
     val monthFormat = remember { SimpleDateFormat("MMM", Locale.getDefault()) }
     val dayFormat = remember { SimpleDateFormat("d", Locale.getDefault()) }
 
-// Convert your note's timestamp (Long) or Date to formatted strings
     val noteDate = remember(note.dateCreated) { Date(note.dateCreated) }
     val monthText = monthFormat.format(noteDate)
     val dayText = dayFormat.format(noteDate)
+    val images = note.imageUriList ?: emptyList()
+
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(28.dp),
@@ -333,7 +291,7 @@ fun HeroJournalCard(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Optional Indicator Badge
+                // Indicator Badge
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -352,79 +310,147 @@ fun HeroJournalCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Asymmetric Media Grid Preview
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Large left image / drawing thumbnail
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            // Dynamic Media Grid
+            if (note.type == NoteType.Drawing || images.isNotEmpty()) {
+                Box(
                     modifier = Modifier
-                        .weight(1.8f)
-                        .fillMaxHeight()
+                        .fillMaxWidth()
+                        .height(160.dp)
                 ) {
-                    if (note.type != NoteType.Drawing) {
-                    if (!note.imageUriList.isNullOrEmpty()) {
-                        AsyncImage(
-                            model = note.imageUriList.first(),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
+                    if (note.type == NoteType.Drawing) {
+                        // Drawing Note -> Single full width thumbnail
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
                             modifier = Modifier.fillMaxSize()
-                        )
+                        ) {
+                            DrawingDetailThumbnail(
+                                strokesData = note.strokesData,
+                                modifier = Modifier.fillMaxSize(),
+                                onClick = {}
+                            )
+                        }
                     } else {
-                        Image(
-                            painter = painterResource(id = R.drawable.media),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    } else {
-                        DrawingDetailThumbnail(
-                            strokesData = note.strokesData,
-                            modifier = Modifier.fillMaxSize(),
-                            onClick = {}
-                        )
-                    }
-                }
+                        when (images.size) {
+                            1 -> {
+                                // Text Note with 1 Image -> Single full width container
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    AsyncImage(
+                                        model = images.first(),
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                            }
+                            2 -> {
+                                // Text Note with 2 Images -> 50/50 side-by-side split
+                                Row(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                    ) {
+                                        AsyncImage(
+                                            model = images[0],
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                    ) {
+                                        AsyncImage(
+                                            model = images[1],
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                }
+                            }
+                            else -> {
+                                // Text Note with 3+ Images -> Asymmetric grid (1 large left, 2 stacked right)
+                                Row(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        modifier = Modifier
+                                            .weight(1.8f)
+                                            .fillMaxHeight()
+                                    ) {
+                                        AsyncImage(
+                                            model = images[0],
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
 
-                // Stacked right chips (Photos / Maps / Ink previews)
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    ) {
-                        // Media thumbnail or drawing preview slot
-                    }
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    ) {
-                        // Location map thumbnail or secondary drawing badge slot
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight(),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .weight(1f)
+                                        ) {
+                                            AsyncImage(
+                                                model = images[1],
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        }
+
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .weight(1f)
+                                        ) {
+                                            AsyncImage(
+                                                model = images[2],
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
 
+            // Embedded "Reflection" Prompt Container (Only for Text Notes)
             if (note.type != NoteType.Drawing) {
-
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Embedded "Reflection" Prompt Container
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -538,8 +564,8 @@ fun CompactJournalRow(
                 if (note.type == NoteType.Drawing) {
                     Text(
                         text = "Drawing",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
                     note.text?.let {
