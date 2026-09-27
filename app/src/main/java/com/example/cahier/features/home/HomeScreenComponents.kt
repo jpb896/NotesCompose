@@ -559,7 +559,7 @@ fun CompactJournalRow(
                     // 3. Text Note without Image -> Fallback Icon
                     else -> {
                         Icon(
-                            painter = painterResource(id = R.drawable.media),
+                            painter = painterResource(id = R.drawable.text_fields_24px),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(16.dp)
