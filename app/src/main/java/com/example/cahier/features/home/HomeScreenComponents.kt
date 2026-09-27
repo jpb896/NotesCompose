@@ -514,6 +514,10 @@ fun CompactJournalRow(
         val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
         formatter.format(Date(note.dateCreated))
     }
+
+    // Retrieve the first attached image if available
+    val firstImageUri = remember(note.imageUriList) { note.imageUriList?.firstOrNull() }
+
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
@@ -534,14 +538,34 @@ fun CompactJournalRow(
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 modifier = Modifier.size(56.dp)
             ) {
-                Icon(
-                    painter = painterResource(
-                        id = if (note.type == NoteType.Drawing) R.drawable.ic_drawing_mode else R.drawable.media
-                    ),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp)
-                )
+                when {
+                    // 1. Drawing Note -> Render Drawing Thumbnail
+                    note.type == NoteType.Drawing -> {
+                        DrawingDetailThumbnail(
+                            strokesData = note.strokesData,
+                            modifier = Modifier.fillMaxSize(),
+                            onClick = {}
+                        )
+                    }
+                    // 2. Text Note with Image -> Render First Image
+                    !firstImageUri.isNullOrEmpty() -> {
+                        AsyncImage(
+                            model = firstImageUri,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    // 3. Text Note without Image -> Fallback Icon
+                    else -> {
+                        Icon(
+                            painter = painterResource(id = R.drawable.media),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.width(14.dp))
@@ -572,7 +596,9 @@ fun CompactJournalRow(
                         Text(
                             text = it,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
