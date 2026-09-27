@@ -22,17 +22,20 @@ import android.net.Uri
 import android.view.DragAndDropPermissions
 import android.view.View
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -46,10 +49,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -60,6 +69,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -73,6 +83,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.DragAndDropTransferData
 import androidx.compose.ui.draganddrop.mimeTypes
@@ -185,6 +196,8 @@ fun NoteCanvasContent(
     modifier: Modifier = Modifier,
 ) {
     var focusedFieldEnum by rememberSaveable { mutableStateOf(FocusedFieldEnum.None) }
+    var showAllMediaScreen by rememberSaveable { mutableStateOf(false) }
+
     val titleFocusRequester = remember { FocusRequester() }
     val bodyFocusRequester = remember { FocusRequester() }
     val activity = LocalActivity.current as? ComponentActivity
@@ -199,7 +212,6 @@ fun NoteCanvasContent(
                     focusedFieldEnum = FocusedFieldEnum.None
                 }
             }
-
             FocusedFieldEnum.None -> {
                 /* Do nothing. */
             }
@@ -210,42 +222,53 @@ fun NoteCanvasContent(
         createDropTarget(activity, onDroppedUri)
     }
 
-    Surface(
-        modifier = modifier
-            .fillMaxSize()
-            .dragAndDropTarget(
-                shouldStartDragAndDrop = { event ->
-                    event.mimeTypes().any { it.startsWith("image/") }
-                },
-                target = dropTarget
-            ),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .imePadding()
-        ) {
-            NoteCanvasTopBar(
-                imagePickerLauncher = imagePickerLauncher,
-                isFavorite = uiState.note.isFavorite,
-                onToggleFavorite = onToggleFavorite,
-                onExit = onExit
-            )
+    if (showAllMediaScreen) {
+        BackHandler { showAllMediaScreen = false }
 
-            NoteCanvasBody(
-                note = uiState.note,
-                titleState = titleState,
-                onTitleChange = onTitleChange,
-                titleFocusRequester = titleFocusRequester,
-                onTitleFocusChanged = { if (it.isFocused) focusedFieldEnum = FocusedFieldEnum.Title },
-                bodyState = bodyState,
-                onBodyChange = onBodyChange,
-                bodyFocusRequester = bodyFocusRequester,
-                onBodyFocusChanged = { if (it.isFocused) focusedFieldEnum = FocusedFieldEnum.Body }
-            )
+        JournalMediaGridScreen(
+            imageUris = uiState.note.imageUriList ?: emptyList(),
+            onBackClick = { showAllMediaScreen = false },
+            modifier = modifier
+        )
+    } else {
+        Surface(
+            modifier = modifier
+                .fillMaxSize()
+                .dragAndDropTarget(
+                    shouldStartDragAndDrop = { event ->
+                        event.mimeTypes().any { it.startsWith("image/") }
+                    },
+                    target = dropTarget
+                ),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .imePadding()
+            ) {
+                NoteCanvasTopBar(
+                    imagePickerLauncher = imagePickerLauncher,
+                    isFavorite = uiState.note.isFavorite,
+                    onToggleFavorite = onToggleFavorite,
+                    onExit = onExit
+                )
+
+                NoteCanvasBody(
+                    note = uiState.note,
+                    titleState = titleState,
+                    onTitleChange = onTitleChange,
+                    titleFocusRequester = titleFocusRequester,
+                    onTitleFocusChanged = { if (it.isFocused) focusedFieldEnum = FocusedFieldEnum.Title },
+                    bodyState = bodyState,
+                    onBodyChange = onBodyChange,
+                    bodyFocusRequester = bodyFocusRequester,
+                    onBodyFocusChanged = { if (it.isFocused) focusedFieldEnum = FocusedFieldEnum.Body },
+                    onShowAllMediaClick = { showAllMediaScreen = true }
+                )
+            }
         }
     }
 }
@@ -432,19 +455,21 @@ private fun NoteCanvasBody(
     onBodyChange: (TextFieldValue) -> Unit,
     bodyFocusRequester: FocusRequester,
     onBodyFocusChanged: (FocusState) -> Unit,
+    onShowAllMediaClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp)
+        modifier = modifier.fillMaxSize()
     ) {
-        // Dynamic Media Container
+        // Google Journal Media Carousel Header
         item {
             val imageList = note.imageUriList ?: emptyList()
             if (imageList.isNotEmpty()) {
-                EditorMediaContainer(imageUris = imageList)
-                Spacer(modifier = Modifier.height(16.dp))
+                TextNoteMediaHeader(
+                    imageUris = imageList,
+                    onShowAllClick = onShowAllMediaClick
+                )
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
 
@@ -476,7 +501,7 @@ private fun NoteCanvasBody(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    .padding(horizontal = 20.dp, vertical = 4.dp)
                     .focusRequester(titleFocusRequester)
                     .onFocusChanged(onTitleFocusChanged)
             )
@@ -492,7 +517,9 @@ private fun NoteCanvasBody(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(vertical = 4.dp)
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+                    .padding(vertical = 4.dp)
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.calendar_month_24px),
@@ -540,7 +567,7 @@ private fun NoteCanvasBody(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .padding(horizontal = 20.dp, vertical = 4.dp)
                         .focusRequester(bodyFocusRequester)
                         .onFocusChanged(onBodyFocusChanged)
                 )
@@ -550,129 +577,219 @@ private fun NoteCanvasBody(
 }
 
 @Composable
-private fun EditorMediaContainer(
-    imageUris: List<String>
+private fun TextNoteMediaHeader(
+    imageUris: List<String>,
+    onShowAllClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Surface(
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(200.dp)
-    ) {
-        when (imageUris.size) {
-            1 -> {
-                // Single image -> full width
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    AsyncImage(
-                        model = imageUris.first(),
-                        contentDescription = stringResource(R.string.uploaded_image),
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+    if (imageUris.isEmpty()) return
+
+    val pages = remember(imageUris) { imageUris.chunked(3) }
+    val pagerState = rememberPagerState(pageCount = { pages.size })
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        HorizontalPager(
+            state = pagerState,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            pageSpacing = 12.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+        ) { pageIndex ->
+            val pageImages = pages[pageIndex]
+
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(24.dp)),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                when (pageImages.size) {
+                    1 -> {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            AsyncImage(
+                                model = pageImages[0],
+                                contentDescription = stringResource(R.string.uploaded_image),
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+                    2 -> {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                        ) {
+                            AsyncImage(
+                                model = pageImages[0],
+                                contentDescription = stringResource(R.string.uploaded_image),
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                        ) {
+                            AsyncImage(
+                                model = pageImages[1],
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+                    else -> {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier
+                                .weight(1.8f)
+                                .fillMaxHeight()
+                        ) {
+                            AsyncImage(
+                                model = pageImages[0],
+                                contentDescription = stringResource(R.string.uploaded_image),
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            ) {
+                                AsyncImage(
+                                    model = pageImages[1],
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            ) {
+                                AsyncImage(
+                                    model = pageImages[2],
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 6.dp),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            Text(
+                text = "Show all",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.clickable { onShowAllClick() }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun JournalMediaGridScreen(
+    imageUris: List<String>,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dateText = remember {
+        SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault()).format(Date())
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Your journal media",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
                     )
-                }
-            }
-            2 -> {
-                // Two images -> 50/50 side by side
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                    ) {
-                        AsyncImage(
-                            model = imageUris[0],
-                            contentDescription = stringResource(R.string.uploaded_image),
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
                         )
                     }
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        modifier = modifier
+    ) { innerPadding ->
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            contentPadding = PaddingValues(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            items(imageUris) { uri ->
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    AsyncImage(
+                        model = uri,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                    ) {
-                        AsyncImage(
-                            model = imageUris[1],
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
-            }
-            else -> {
-                // 3+ images -> asymmetric grid
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        modifier = Modifier
-                            .weight(1.8f)
-                            .fillMaxHeight()
-                    ) {
-                        AsyncImage(
-                            model = imageUris.first(),
-                            contentDescription = stringResource(R.string.uploaded_image),
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                        ) {
-                            AsyncImage(
-                                model = imageUris[1],
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                        ) {
-                            AsyncImage(
-                                model = imageUris[2],
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                    }
+                            .fillMaxWidth()
+                            .height(160.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Photos",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = dateText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
