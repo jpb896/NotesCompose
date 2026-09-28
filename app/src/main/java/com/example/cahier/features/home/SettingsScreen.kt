@@ -20,6 +20,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,6 +35,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -46,10 +48,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.cahier.R
+import com.example.cahier.core.navigation.HomePagePreference
 import com.example.cahier.features.home.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
@@ -63,6 +67,8 @@ fun SettingsScreen(
 ) {
     val isRoleAvailable by viewModel.isRoleAvailable.collectAsStateWithLifecycle()
     val isRoleHeld by viewModel.isRoleHeld.collectAsStateWithLifecycle()
+    val homePagePreference by viewModel.homePagePreference.collectAsStateWithLifecycle()
+
     LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -89,11 +95,62 @@ fun SettingsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Constrain content width on wide screens
             Column(
                 modifier = Modifier.widthIn(max = 600.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // ── Default Home Page Preference ──
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.settings_24px),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Default home page",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Text(
+                            text = "Select your preferred home page style.\n'Modern' is the default page, designed with large screens and emphasis in mind.\n'Simple' is more similar to the home page design other notes apps use, which is a simple list of notes without added flair.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        HomePagePreference.entries.forEach { preference ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { viewModel.setHomePagePreference(preference) }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = preference.title,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                RadioButton(
+                                    selected = (preference == homePagePreference),
+                                    onClick = { viewModel.setHomePagePreference(preference) }
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // ── Default Notes App ──
                 ElevatedCard(
                     modifier = Modifier.fillMaxWidth()
@@ -174,8 +231,7 @@ fun SettingsScreen(
                                 )
                                 Text(
                                     text = stringResource(
-                                        R.string
-                                            .settings_personalization_tools_description
+                                        R.string.settings_personalization_tools_description
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -191,8 +247,7 @@ fun SettingsScreen(
                                 )
                                 Text(
                                     text = stringResource(
-                                        R.string
-                                            .settings_brush_designer_description
+                                        R.string.settings_brush_designer_description
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant

@@ -39,6 +39,7 @@ import com.example.cahier.features.home.HomeDestination
 import com.example.cahier.features.home.HomePane
 import com.example.cahier.features.home.SettingsScreen
 import com.example.cahier.features.home.viewmodel.HomeScreenViewModel
+import com.example.cahier.features.home.viewmodel.SettingsViewModel
 import com.example.cahier.features.insights.InsightsScreen
 import com.example.cahier.features.text.TextNoteCanvasScreen
 
@@ -49,17 +50,29 @@ fun CahierNavHost(
     navController: NavHostController,
     textureStore: CahierTextureBitmapStore,
     modifier: Modifier = Modifier,
-    homeViewModel: HomeScreenViewModel = hiltViewModel()
+    homeViewModel: HomeScreenViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val noteListState by homeViewModel.noteList.collectAsStateWithLifecycle()
     val notes = noteListState.noteList
 
+    val homePagePreference by settingsViewModel.homePagePreference.collectAsStateWithLifecycle()
+
+    // Prevent early rendering flicker before DataStore resolves
+    val preference = homePagePreference ?: return
+
+    val initialDestination = if (preference == HomePagePreference.HOME) {
+        HomeDestination.route
+    } else {
+        CahierTab.Entries.route
+    }
+
     NavHost(
         navController = navController,
-        startDestination = HomeDestination.route,
+        startDestination = initialDestination,
         modifier = modifier
     ) {
-        // Home Screen
+        // Home Screen Destination
         composable(HomeDestination.route) {
             HomePane(
                 navigateToCanvas = { noteId ->
@@ -77,7 +90,7 @@ fun CahierNavHost(
             )
         }
 
-        // Bottom Bar Destination: Entries
+        // Entries Screen Destination
         composable(CahierTab.Entries.route) {
             EntriesScreen(
                 notes = notes,
@@ -88,21 +101,17 @@ fun CahierNavHost(
             )
         }
 
-        // Bottom Bar Destination: Insights
+        // Insights Destination
         composable(CahierTab.Insights.route) {
             InsightsScreen(
                 notes = notes,
-                onSearchClick = {
-                    /* Handle search navigation */
-                },
-                onProfileClick = {
-                    /* Handle profile navigation */
-                },
+                onSearchClick = { },
+                onProfileClick = { },
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        // Bottom Bar Destination: Settings
+        // Settings Destination
         composable(CahierTab.Settings.route) {
             SettingsScreen(
                 navigateToBrushGraph = {

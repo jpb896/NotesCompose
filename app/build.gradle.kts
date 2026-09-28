@@ -177,6 +177,8 @@ dependencies {
 
     //Color Picker
     implementation(libs.compose.color.picker.android)
+
+    implementation(libs.androidx.datastore.preferences)
 }
 java {
     toolchain {

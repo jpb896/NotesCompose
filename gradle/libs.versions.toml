@@ -2,6 +2,7 @@
 agp = "9.5.0-alpha07"
 appcompatV7 = "1.8.0"
 coilCompose = "3.6.3"
+datastorePreferences = "1.2.1"
 foundation = "1.12.1"
 hiltAndroid = "2.60.1"
 hiltNavigationCompose = "1.4.0"
@@ -53,6 +54,7 @@ inkStrokes = "1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 androidx-ink-authoring = { module = "androidx.ink:ink-authoring", version.ref = "ink" }

@@ -19,9 +19,7 @@ package com.example.cahier.features.home
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
@@ -49,12 +47,8 @@ import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
-import androidx.compose.material3.adaptive.layout.PaneExpansionState
 import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
-import androidx.compose.material3.adaptive.navigation.ThreePaneScaffoldNavigator
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
@@ -88,18 +82,12 @@ import com.example.cahier.R
 import com.example.cahier.core.data.Note
 import com.example.cahier.core.data.NoteType
 import com.example.cahier.core.navigation.NavigationDestination
-import com.example.cahier.core.ui.CahierUiState
-import com.example.cahier.features.home.viewmodel.HomeScreenViewModel
-import com.example.cahier.features.home.viewmodel.NoteListUiState
-import kotlinx.coroutines.launch
 import com.example.cahier.features.drawing.DrawingDetailThumbnail
+import com.example.cahier.features.home.viewmodel.HomeScreenViewModel
+import kotlinx.coroutines.launch
 
 private val MinPaneWidth = 250.dp
 
-
-// The layout modifier implements a minimum width for the pane while
-// allowing it to report its original width to the scaffold, preventing
-// content from being overly compressed during resizing.
 private fun Modifier.minimumWidthLayout(minWidth: Dp): Modifier = this
     .clipToBounds()
     .layout { measurable, constraints ->
@@ -124,24 +112,6 @@ object HomeDestination : NavigationDestination {
     override val route = "home"
 }
 
-enum class AppDestinations(
-    @param:StringRes val label: Int,
-    @param:DrawableRes val icon: Int,
-    @param:StringRes val contentDescription: Int,
-) {
-    Home(
-        label = R.string.home,
-        icon = R.drawable.home_24px,
-        contentDescription = R.string.home
-    ),
-    Settings(
-        label = R.string.settings,
-        icon = R.drawable.settings_24px,
-        contentDescription = R.string.settings
-    ),
-}
-
-
 @SuppressLint("NewApi")
 @OptIn(
     ExperimentalMaterial3AdaptiveApi::class,
@@ -157,36 +127,25 @@ fun HomePane(
     forceCompact: Boolean? = null,
     homeScreenViewModel: HomeScreenViewModel = hiltViewModel(),
 ) {
-    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.Home) }
     val navigator = rememberListDetailPaneScaffoldNavigator<Note>()
     val noteList by homeScreenViewModel.noteList.collectAsStateWithLifecycle()
     val selectedNoteUIState by homeScreenViewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
-    val activity = LocalActivity.current
-    val windowSizeClass = activity?.let { calculateWindowSizeClass(it) }
+    val context = LocalContext.current
+    val windowSizeClass = (context as? androidx.activity.ComponentActivity)?.let { calculateWindowSizeClass(it) }
+
     val paneExpansionState = rememberPaneExpansionState(
         keyProvider = navigator.scaffoldValue,
         anchors = listOf(
-            // 1. Fully collapsed state (0% screen fraction)
-            PaneExpansionAnchor.Proportion(proportion = 0f),
-
-            // 2. The 25 % minimum width snapping boundary anchor
-            PaneExpansionAnchor.Proportion(proportion = 0.25f),
-
-            // 3. Middle split state (50% screen fraction)
-            PaneExpansionAnchor.Proportion(proportion = 0.5f),
-
-            // 4. Fully expanded list state (100% screen fraction, detail collapsed)
-            PaneExpansionAnchor.Proportion(proportion = 1f)
+            PaneExpansionAnchor.Proportion(0f),
+            PaneExpansionAnchor.Proportion(0.25f),
+            PaneExpansionAnchor.Proportion(0.5f),
+            PaneExpansionAnchor.Proportion(1f)
         )
     )
-    var hasSetInitialProportion by rememberSaveable {
-        mutableStateOf(false)
-    }
+    var hasSetInitialProportion by rememberSaveable { mutableStateOf(false) }
     val isCompact = forceCompact
         ?: (windowSizeClass?.widthSizeClass == WindowWidthSizeClass.Compact)
-    val context = LocalContext.current
-
 
     LaunchedEffect(Unit) {
         homeScreenViewModel.newWindowEvent.collect { (noteType, noteId) ->
@@ -227,131 +186,83 @@ fun HomePane(
         }
     }
 
-    CahierNavigationSuite(
-        modifier = modifier,
-        currentDestination = currentDestination,
-        onDestinationChanged = { newDestination -> currentDestination = newDestination },
-        navigator = navigator,
-        homeScreenViewModel = homeScreenViewModel,
+    ListDetailPaneScaffold(
+        modifier = modifier.fillMaxSize(),
+        directive = navigator.scaffoldDirective,
+        value = navigator.scaffoldValue,
         paneExpansionState = paneExpansionState,
-        noteList = noteList,
-        isCompact = isCompact,
-        selectedNoteUIState = selectedNoteUIState,
-        navigateToCanvas = navigateToCanvas,
-        navigateToDrawingCanvas = navigateToDrawingCanvas,
-        navigateToBrushGraph = navigateToBrushGraph,
-        navigateUp = navigateUp
-    )
-}
-
-@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
-@Composable
-private fun CahierNavigationSuite(
-    modifier: Modifier = Modifier,
-    currentDestination: AppDestinations,
-    onDestinationChanged: (AppDestinations) -> Unit,
-    navigator: ThreePaneScaffoldNavigator<Note>,
-    homeScreenViewModel: HomeScreenViewModel,
-    paneExpansionState: PaneExpansionState,
-    noteList: NoteListUiState,
-    isCompact: Boolean,
-    selectedNoteUIState: CahierUiState,
-    navigateToCanvas: (Long) -> Unit,
-    navigateToDrawingCanvas: (Long) -> Unit,
-    navigateToBrushGraph: () -> Unit,
-    navigateUp: () -> Unit,
-) {
-    // Render content directly without NavigationSuiteScaffold
-    when (currentDestination) {
-        AppDestinations.Home -> {
-            ListDetailPaneScaffold(
-                modifier = modifier.fillMaxSize(),
-                directive = navigator.scaffoldDirective,
-                value = navigator.scaffoldValue,
-                paneExpansionState = paneExpansionState,
-                paneExpansionDragHandle = { state ->
-                    val interactionSource = remember { MutableInteractionSource() }
-                    VerticalDragHandle(
-                        modifier = Modifier
-                            .paneExpansionDraggable(
-                                state,
-                                LocalMinimumInteractiveComponentSize.current,
-                                interactionSource,
-                            )
-                            .zIndex(2f),
+        paneExpansionDragHandle = { state ->
+            val interactionSource = remember { MutableInteractionSource() }
+            VerticalDragHandle(
+                modifier = Modifier
+                    .paneExpansionDraggable(
+                        state,
+                        LocalMinimumInteractiveComponentSize.current,
+                        interactionSource,
                     )
+                    .zIndex(2f),
+            )
+        },
+        listPane = {
+            ListPaneContent(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .minimumWidthLayout(MinPaneWidth),
+                noteList = noteList.noteList,
+                isCompact = isCompact,
+                selectedNoteId = if (isCompact) null else selectedNoteUIState.note.id,
+                onNoteClick = {
+                    if (isCompact) {
+                        if (it.type == NoteType.Drawing) {
+                            navigateToDrawingCanvas(it.id)
+                        } else {
+                            navigateToCanvas(it.id)
+                        }
+                    } else {
+                        homeScreenViewModel.selectNote(it.id)
+                    }
                 },
-                listPane = {
-                    ListPaneContent(
+                onAddNewTextNote = {
+                    homeScreenViewModel.addNote { noteId -> navigateToCanvas(noteId) }
+                },
+                onAddNewDrawingNote = {
+                    homeScreenViewModel.addDrawingNote { noteId -> navigateToDrawingCanvas(noteId) }
+                },
+                onDeleteNote = { note ->
+                    homeScreenViewModel.deleteNote(note)
+                    navigateUp()
+                },
+                onToggleFavorite = { noteId ->
+                    homeScreenViewModel.toggleFavorite(noteId)
+                },
+                onNewWindow = { note ->
+                    homeScreenViewModel.openInNewWindow(note)
+                },
+            )
+        },
+        detailPane = {
+            if (!isCompact) {
+                selectedNoteUIState.note.let { note ->
+                    DetailPaneContent(
                         modifier = Modifier
                             .fillMaxSize()
+                            .zIndex(1f)
                             .minimumWidthLayout(MinPaneWidth),
-                        noteList = noteList.noteList,
-                        isCompact = isCompact,
-                        selectedNoteId = if (isCompact) null else selectedNoteUIState.note.id,
-                        onNoteClick = {
-                            if (isCompact) {
-                                if (it.type == NoteType.Drawing) {
-                                    navigateToDrawingCanvas(it.id)
-                                } else {
-                                    navigateToCanvas(it.id)
-                                }
+                        note = note,
+                        strokes = selectedNoteUIState.strokes,
+                        onClickToEdit = {
+                            if (note.type == NoteType.Text) {
+                                navigateToCanvas(note.id)
                             } else {
-                                homeScreenViewModel.selectNote(it.id)
+                                navigateToDrawingCanvas(note.id)
                             }
-                        },
-                        onAddNewTextNote = {
-                            homeScreenViewModel.addNote { noteId -> navigateToCanvas(noteId) }
-                        },
-                        onAddNewDrawingNote = {
-                            homeScreenViewModel.addDrawingNote { noteId -> navigateToDrawingCanvas(noteId) }
-                        },
-                        onDeleteNote = { note ->
-                            homeScreenViewModel.deleteNote(note)
-                            navigateUp()
-                        },
-                        onToggleFavorite = { noteId ->
-                            homeScreenViewModel.toggleFavorite(noteId)
-                        },
-                        onNewWindow = { note ->
-                            homeScreenViewModel.openInNewWindow(note)
-                        },
-                    )
-                },
-                detailPane = {
-                    if (!isCompact) {
-                        selectedNoteUIState.note.let { note ->
-                            DetailPaneContent(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .zIndex(1f)
-                                    .minimumWidthLayout(MinPaneWidth),
-                                note = note,
-                                strokes = selectedNoteUIState.strokes,
-                                onClickToEdit = {
-                                    if (note.type == NoteType.Text) {
-                                        navigateToCanvas(note.id)
-                                    } else {
-                                        navigateToDrawingCanvas(note.id)
-                                    }
-                                }
-                            )
                         }
-                    }
+                    )
                 }
-            )
+            }
         }
-
-        AppDestinations.Settings -> {
-            SettingsScreen(
-                navigateToBrushGraph = navigateToBrushGraph,
-                modifier = modifier.fillMaxSize()
-            )
-        }
-    }
+    )
 }
-
 
 @Composable
 private fun ListPaneContent(
@@ -404,7 +315,6 @@ private fun DetailPaneContent(
                 .clickable { onClickToEdit(note) }
                 .padding(24.dp)
         ) {
-            // Expressive Journal Header Row: Date Badge & Action Chip
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -418,7 +328,7 @@ private fun DetailPaneContent(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Today", // Replace with formatted note timestamp if available
+                        text = "Today",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -450,7 +360,6 @@ private fun DetailPaneContent(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Title
             Text(
                 text = note.title.ifBlank { stringResource(R.string.untitled_note) },
                 style = MaterialTheme.typography.headlineMedium,
@@ -460,7 +369,6 @@ private fun DetailPaneContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Body Content based on Note Type
             when (note.type) {
                 NoteType.Text -> {
                     note.text?.let { text ->
