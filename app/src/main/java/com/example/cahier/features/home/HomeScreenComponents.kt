@@ -497,7 +497,7 @@ fun HeroJournalCard(
                 }
 
                 // Embedded "Reflection" Prompt Container (Only for Text Notes)
-                if (note.type != NoteType.Drawing) {
+                if (note.type != NoteType.Drawing && !note.text.isNullOrBlank())  {
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Surface(
