@@ -41,8 +41,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,11 +57,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cahier.R
 import com.example.cahier.core.data.Note
+import com.example.cahier.core.ui.CahierTopBar
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-// Feature flag to control visibility of topics until implemented
 private const val SHOW_TOPICS_FEATURE = false
 
 enum class InsightsTimeframe {
@@ -81,7 +79,6 @@ fun InsightsScreen(
     var timeframe by rememberSaveable { mutableStateOf(InsightsTimeframe.WEEK) }
     var calendarState by remember { mutableStateOf(Calendar.getInstance()) }
 
-    // Dynamic Start/End of Current Week (Monday to Sunday)
     val (weekStartCal, weekEndCal) = remember(calendarState.timeInMillis) {
         val start = (calendarState.clone() as Calendar).apply {
             set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
@@ -100,7 +97,6 @@ fun InsightsScreen(
         Pair(start, end)
     }
 
-    // Dynamic Header Title Calculation
     val headerText = remember(calendarState.timeInMillis, timeframe) {
         if (timeframe == InsightsTimeframe.WEEK) {
             val sameMonth = weekStartCal.get(Calendar.MONTH) == weekEndCal.get(Calendar.MONTH)
@@ -123,7 +119,6 @@ fun InsightsScreen(
         }
     }
 
-    // Filter notes relevant to the selected timeframe
     val filteredNotes = remember(notes, calendarState.timeInMillis, timeframe) {
         notes.filter { note ->
             if (timeframe == InsightsTimeframe.WEEK) {
@@ -136,7 +131,6 @@ fun InsightsScreen(
         }
     }
 
-    // Dynamic Stats Calculations for the active timeframe
     val totalEntries = filteredNotes.size
 
     val (mostActiveTime, writingStreak) = remember(filteredNotes, calendarState.timeInMillis, timeframe) {
@@ -178,7 +172,6 @@ fun InsightsScreen(
         }
     }
 
-    // Days in current selected period that contain notes (for calendar icons)
     val entryDays = remember(filteredNotes) {
         filteredNotes.map { note ->
             val cal = Calendar.getInstance().apply { timeInMillis = note.dateCreated }
@@ -188,36 +181,10 @@ fun InsightsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "Journal",
-                            style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp),
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onSearchClick) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.search_24px),
-                            contentDescription = "Search"
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onProfileClick) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.account_circle_24px),
-                            contentDescription = "Profile",
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+            CahierTopBar(
+                title = "Notes",
+                onSearchClick = onSearchClick,
+                onProfileClick = onProfileClick
             )
         },
         modifier = modifier
@@ -229,7 +196,6 @@ fun InsightsScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Timeframe Segmented Switcher
             item {
                 TimeframeSegmentedControl(
                     selectedTimeframe = timeframe,
@@ -237,7 +203,6 @@ fun InsightsScreen(
                 )
             }
 
-            // Month / Week Navigation Header
             item {
                 MonthNavigationHeader(
                     displayText = headerText,
@@ -265,7 +230,6 @@ fun InsightsScreen(
                 )
             }
 
-            // Main Stat Summary Card
             item {
                 JournalStatsCard(
                     mostActiveTime = mostActiveTime,
@@ -275,7 +239,6 @@ fun InsightsScreen(
                 )
             }
 
-            // Your Moods / Calendar Card
             item {
                 YourMoodsCard(
                     timeframe = timeframe,

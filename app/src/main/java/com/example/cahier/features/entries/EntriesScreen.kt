@@ -47,8 +47,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,11 +61,14 @@ import androidx.compose.ui.unit.dp
 import com.example.cahier.R
 import com.example.cahier.core.data.Note
 import com.example.cahier.core.data.NoteType
+import com.example.cahier.core.ui.CahierTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EntriesScreen(
     notes: List<Note> = emptyList(),
+    onSearchClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
     onNoteClick: (Note) -> Unit = {},
     onNewTextNoteClick: () -> Unit = {},
     onNewDrawingNoteClick: () -> Unit = {},
@@ -77,17 +78,10 @@ fun EntriesScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "All Entries",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+            CahierTopBar(
+                title = "All notes",
+                onSearchClick = onSearchClick,
+                onProfileClick = onProfileClick
             )
         },
         floatingActionButton = {
@@ -104,7 +98,6 @@ fun EntriesScreen(
                         horizontalAlignment = Alignment.End,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Drawing Note Sub-FAB
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = "Drawing Note",
@@ -129,7 +122,6 @@ fun EntriesScreen(
                             }
                         }
 
-                        // Text Note Sub-FAB
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = "Text Note",
@@ -156,7 +148,6 @@ fun EntriesScreen(
                     }
                 }
 
-                // Primary FAB toggle
                 FloatingActionButton(
                     onClick = { isFabExpanded = !isFabExpanded },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,

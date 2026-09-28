@@ -18,11 +18,7 @@ package com.example.cahier.features.home
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.os.Build
 import androidx.activity.compose.BackHandler
-import androidx.annotation.DrawableRes
-import androidx.annotation.RequiresApi
-import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +36,7 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDragHandle
@@ -82,6 +79,7 @@ import com.example.cahier.R
 import com.example.cahier.core.data.Note
 import com.example.cahier.core.data.NoteType
 import com.example.cahier.core.navigation.NavigationDestination
+import com.example.cahier.core.ui.CahierTopBar
 import com.example.cahier.features.drawing.DrawingDetailThumbnail
 import com.example.cahier.features.home.viewmodel.HomeScreenViewModel
 import kotlinx.coroutines.launch
@@ -123,6 +121,8 @@ fun HomePane(
     navigateToDrawingCanvas: (Long) -> Unit,
     navigateToBrushGraph: () -> Unit = {},
     navigateUp: () -> Unit,
+    onSearchClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     forceCompact: Boolean? = null,
     homeScreenViewModel: HomeScreenViewModel = hiltViewModel(),
@@ -211,6 +211,8 @@ fun HomePane(
                 noteList = noteList.noteList,
                 isCompact = isCompact,
                 selectedNoteId = if (isCompact) null else selectedNoteUIState.note.id,
+                onSearchClick = onSearchClick,
+                onProfileClick = onProfileClick,
                 onNoteClick = {
                     if (isCompact) {
                         if (it.type == NoteType.Drawing) {
@@ -269,6 +271,8 @@ private fun ListPaneContent(
     noteList: List<Note>,
     isCompact: Boolean,
     selectedNoteId: Long?,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
     onNoteClick: (Note) -> Unit,
     onAddNewTextNote: () -> Unit,
     onAddNewDrawingNote: () -> Unit,
@@ -283,16 +287,29 @@ private fun ListPaneContent(
         if (recentNote != null) noteList.filter { it.id != recentNote.id } else noteList
     }
 
-    JournalHomeScreen(
-        recentNote = recentNote,
-        otherNotes = otherNotes,
-        bookmarks = bookmarks,
-        onNoteClick = onNoteClick,
-        onBookmarkToggle = { note -> onToggleFavorite(note.id) },
-        onNewTextNoteClick = onAddNewTextNote,
-        onNewDrawingNoteClick = onAddNewDrawingNote,
-        modifier = modifier.testTag("List")
-    )
+    Scaffold(
+        topBar = {
+            CahierTopBar(
+                title = "Notes",
+                onSearchClick = onSearchClick,
+                onProfileClick = onProfileClick
+            )
+        },
+        modifier = modifier
+    ) { innerPadding ->
+        JournalHomeScreen(
+            recentNote = recentNote,
+            otherNotes = otherNotes,
+            bookmarks = bookmarks,
+            onNoteClick = onNoteClick,
+            onBookmarkToggle = { note -> onToggleFavorite(note.id) },
+            onNewTextNoteClick = onAddNewTextNote,
+            onNewDrawingNoteClick = onAddNewDrawingNote,
+            modifier = Modifier
+                .padding(innerPadding)
+                .testTag("List")
+        )
+    }
 }
 
 @Composable
@@ -306,7 +323,7 @@ private fun DetailPaneContent(
         modifier = modifier
             .padding(16.dp)
             .testTag("Detail"),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 2.dp
     ) {
@@ -359,7 +376,7 @@ private fun DetailPaneContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = note.title.ifBlank { stringResource(R.string.untitled_note) },
@@ -385,8 +402,8 @@ private fun DetailPaneContent(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(300.dp),
-                        shape = RoundedCornerShape(20.dp),
+                            .height(280.dp),
+                        shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerLowest
                     ) {
                         DrawingDetailThumbnail(

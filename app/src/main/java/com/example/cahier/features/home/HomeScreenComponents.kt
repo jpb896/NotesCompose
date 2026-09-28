@@ -172,12 +172,10 @@ fun JournalHomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(bottom = innerPadding.calculateBottomPadding())
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
             // Recent Entry Section
             recentNote?.let { note ->
                 Text(
@@ -215,7 +213,7 @@ fun JournalHomeScreen(
             }
             if (otherNotes.isNotEmpty()) {
                 Text(
-                    text = "All Entries",
+                    text = "All notes",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
