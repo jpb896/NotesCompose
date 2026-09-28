@@ -14,7 +14,7 @@
   -->
 
 <resources>
-    <string name="app_name">Cahier</string>
+    <string name="app_name">Notes</string>
     <string name="floating_action_button_des">Add new note</string>
     <string name="date_pattern">MM/dd/YYYY</string>
     <string name="all_notes">All notes</string>
