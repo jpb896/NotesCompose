@@ -21,6 +21,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,17 +44,24 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -70,6 +78,7 @@ fun EntriesScreen(
     onSearchClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onNoteClick: (Note) -> Unit = {},
+    onDeleteNote: (Note) -> Unit = {},
     onNewTextNoteClick: () -> Unit = {},
     onNewDrawingNoteClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -193,54 +202,118 @@ fun EntriesScreen(
                     .padding(innerPadding)
             ) {
                 items(notes, key = { it.id }) { note ->
-                    EntryItemCard(note = note, onClick = { onNoteClick(note) })
+                    key(note.id) {
+                        EntryItemCard(
+                            note = note,
+                            onClick = { onNoteClick(note) },
+                            onDeleteClick = { onDeleteNote(note) }
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EntryItemCard(
     note: Note,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = note.title.ifEmpty { "Untitled Entry" },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (note.type == NoteType.Drawing) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Drawing Note",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { dismissValue ->
+            if (dismissValue == SwipeToDismissBoxValue.EndToStart || dismissValue == SwipeToDismissBoxValue.StartToEnd) {
+                onDeleteClick()
+                true // Must return true so the swipe action completes and registers the deletion
             } else {
-                note.text?.let { text ->
-                    if (text.isNotEmpty()) {
+                false
+            }
+        }
+    )
+
+    // Reset the dismiss state when the note entry changes
+    LaunchedEffect(note.id) {
+        dismissState.reset()
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val color = MaterialTheme.colorScheme.errorContainer
+            val contentColor = MaterialTheme.colorScheme.onErrorContainer
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(color)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.delete_24px),
+                    contentDescription = "Delete note",
+                    tint = contentColor
+                )
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = note.title.ifEmpty { "Untitled Entry" },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (note.type == NoteType.Drawing) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = text,
+                            text = "Drawing Note",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    } else {
+                        note.text?.let { text ->
+                            if (text.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = text,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
+                }
+
+                // Delete button fallback
+                IconButton(onClick = onDeleteClick) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.delete_24px),
+                        contentDescription = "Delete note",
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }

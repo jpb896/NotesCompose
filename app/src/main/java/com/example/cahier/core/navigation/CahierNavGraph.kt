@@ -102,6 +102,9 @@ fun CahierNavHost(
                         navController.navigate("${TextCanvasDestination.route}/${note.id}")
                     }
                 },
+                onDeleteNote = { note ->
+                    homeViewModel.deleteNote(note) // <--- Hook this up here!
+                },
                 onNewTextNoteClick = {
                     homeViewModel.addNote { newNoteId ->
                         navController.navigate("${TextCanvasDestination.route}/$newNoteId")

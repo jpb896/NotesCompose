@@ -303,6 +303,7 @@ private fun ListPaneContent(
             bookmarks = bookmarks,
             onNoteClick = onNoteClick,
             onBookmarkToggle = { note -> onToggleFavorite(note.id) },
+            onDeleteNote = onDeleteNote, // Passes the deletion handler successfully
             onNewTextNoteClick = onAddNewTextNote,
             onNewDrawingNoteClick = onAddNewDrawingNote,
             modifier = Modifier
