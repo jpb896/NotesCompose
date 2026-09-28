@@ -63,6 +63,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+// Feature flag to control visibility of topics until implemented
+private const val SHOW_TOPICS_FEATURE = false
+
 enum class InsightsTimeframe {
     WEEK, MONTH
 }
@@ -78,65 +81,110 @@ fun InsightsScreen(
     var timeframe by rememberSaveable { mutableStateOf(InsightsTimeframe.WEEK) }
     var calendarState by remember { mutableStateOf(Calendar.getInstance()) }
 
-    val monthYearText = remember(calendarState.timeInMillis) {
-        SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(calendarState.time)
+    // Dynamic Start/End of Current Week (Monday to Sunday)
+    val (weekStartCal, weekEndCal) = remember(calendarState.timeInMillis) {
+        val start = (calendarState.clone() as Calendar).apply {
+            set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val end = (start.clone() as Calendar).apply {
+            add(Calendar.DAY_OF_MONTH, 6)
+            set(Calendar.HOUR_OF_DAY, 23)
+            set(Calendar.MINUTE, 59)
+            set(Calendar.SECOND, 59)
+            set(Calendar.MILLISECOND, 999)
+        }
+        Pair(start, end)
     }
 
-    // Dynamic Calculations
-    val totalEntries = notes.size
+    // Dynamic Header Title Calculation
+    val headerText = remember(calendarState.timeInMillis, timeframe) {
+        if (timeframe == InsightsTimeframe.WEEK) {
+            val sameMonth = weekStartCal.get(Calendar.MONTH) == weekEndCal.get(Calendar.MONTH)
+            val sameYear = weekStartCal.get(Calendar.YEAR) == weekEndCal.get(Calendar.YEAR)
 
-    val (mostActiveTime, writingStreak) = remember(notes) {
-        if (notes.isEmpty()) {
-            Pair("--", 0)
+            val startDay = weekStartCal.get(Calendar.DAY_OF_MONTH)
+            val endDay = weekEndCal.get(Calendar.DAY_OF_MONTH)
+
+            val startMonth = SimpleDateFormat("MMM", Locale.getDefault()).format(weekStartCal.time)
+            val endMonth = SimpleDateFormat("MMM", Locale.getDefault()).format(weekEndCal.time)
+            val year = SimpleDateFormat("yyyy", Locale.getDefault()).format(weekEndCal.time)
+
+            when {
+                sameMonth && sameYear -> "$startDay - $endDay $startMonth $year"
+                !sameMonth && sameYear -> "$startDay $startMonth - $endDay $endMonth $year"
+                else -> "$startDay $startMonth ${weekStartCal.get(Calendar.YEAR)} - $endDay $endMonth $year"
+            }
+        } else {
+            SimpleDateFormat("MMMM", Locale.getDefault()).format(calendarState.time)
+        }
+    }
+
+    // Filter notes relevant to the selected timeframe
+    val filteredNotes = remember(notes, calendarState.timeInMillis, timeframe) {
+        notes.filter { note ->
+            if (timeframe == InsightsTimeframe.WEEK) {
+                note.dateCreated in weekStartCal.timeInMillis..weekEndCal.timeInMillis
+            } else {
+                val cal = Calendar.getInstance().apply { timeInMillis = note.dateCreated }
+                cal.get(Calendar.MONTH) == calendarState.get(Calendar.MONTH) &&
+                        cal.get(Calendar.YEAR) == calendarState.get(Calendar.YEAR)
+            }
+        }
+    }
+
+    // Dynamic Stats Calculations for the active timeframe
+    val totalEntries = filteredNotes.size
+
+    val (mostActiveTime, writingStreak) = remember(filteredNotes, calendarState.timeInMillis, timeframe) {
+        if (filteredNotes.isEmpty()) {
+            Pair("-", 0)
         } else {
             val hourCounts = mutableMapOf<Int, Int>()
-            val noteDays = mutableSetOf<Long>()
+            val uniqueDays = mutableSetOf<Int>()
 
-            notes.forEach { note ->
+            filteredNotes.forEach { note ->
                 val cal = Calendar.getInstance().apply { timeInMillis = note.dateCreated }
                 val hour = cal.get(Calendar.HOUR_OF_DAY)
                 hourCounts[hour] = (hourCounts[hour] ?: 0) + 1
 
-                cal.set(Calendar.HOUR_OF_DAY, 0)
-                cal.set(Calendar.MINUTE, 0)
-                cal.set(Calendar.SECOND, 0)
-                cal.set(Calendar.MILLISECOND, 0)
-                noteDays.add(cal.timeInMillis)
+                uniqueDays.add(cal.get(Calendar.DAY_OF_YEAR))
             }
 
             val peakHour = hourCounts.maxByOrNull { it.value }?.key ?: 12
             val formattedHour = if (peakHour == 0) "12 AM" else if (peakHour == 12) "12 PM" else if (peakHour > 12) "${peakHour - 12} PM" else "$peakHour AM"
 
-            var streak = 0
-            val todayCal = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
+            val sortedDays = uniqueDays.sorted()
+            var maxStreak = 0
+            var currentStreak = 0
+            var previousDay = -1
+
+            for (day in sortedDays) {
+                if (previousDay == -1 || day == previousDay + 1) {
+                    currentStreak++
+                } else {
+                    currentStreak = 1
+                }
+                if (currentStreak > maxStreak) {
+                    maxStreak = currentStreak
+                }
+                previousDay = day
             }
 
-            while (noteDays.contains(todayCal.timeInMillis)) {
-                streak++
-                todayCal.add(Calendar.DAY_OF_YEAR, -1)
-            }
-
-            Pair(formattedHour, streak)
+            Pair(formattedHour, maxStreak)
         }
     }
 
-    val entryDays = remember(notes, calendarState.timeInMillis) {
-        val currentMonth = calendarState.get(Calendar.MONTH)
-        val currentYear = calendarState.get(Calendar.YEAR)
-
-        notes.mapNotNull { note ->
+    // Days in current selected period that contain notes (for calendar icons)
+    val entryDays = remember(filteredNotes) {
+        filteredNotes.map { note ->
             val cal = Calendar.getInstance().apply { timeInMillis = note.dateCreated }
-            if (cal.get(Calendar.MONTH) == currentMonth && cal.get(Calendar.YEAR) == currentYear) {
-                cal.get(Calendar.DAY_OF_MONTH)
-            } else null
+            cal.get(Calendar.DAY_OF_MONTH)
         }.toSet()
     }
-
-    val currentDayOfMonth = remember { Calendar.getInstance().get(Calendar.DAY_OF_MONTH) }
 
     Scaffold(
         topBar = {
@@ -189,18 +237,26 @@ fun InsightsScreen(
                 )
             }
 
-            // Month Navigation Header
+            // Month / Week Navigation Header
             item {
                 MonthNavigationHeader(
-                    currentMonth = monthYearText,
+                    displayText = headerText,
                     onPreviousClick = {
                         calendarState = (calendarState.clone() as Calendar).apply {
-                            add(Calendar.MONTH, -1)
+                            if (timeframe == InsightsTimeframe.WEEK) {
+                                add(Calendar.WEEK_OF_YEAR, -1)
+                            } else {
+                                add(Calendar.MONTH, -1)
+                            }
                         }
                     },
                     onNextClick = {
                         calendarState = (calendarState.clone() as Calendar).apply {
-                            add(Calendar.MONTH, 1)
+                            if (timeframe == InsightsTimeframe.WEEK) {
+                                add(Calendar.WEEK_OF_YEAR, 1)
+                            } else {
+                                add(Calendar.MONTH, 1)
+                            }
                         }
                     },
                     onCalendarClick = {
@@ -215,16 +271,17 @@ fun InsightsScreen(
                     mostActiveTime = mostActiveTime,
                     totalEntries = totalEntries,
                     writingStreakDays = writingStreak,
-                    topTopic = "Travel"
+                    topTopic = if (SHOW_TOPICS_FEATURE) "Travel" else null
                 )
             }
 
-            // Your Moods Calendar Card
+            // Your Moods / Calendar Card
             item {
                 YourMoodsCard(
                     timeframe = timeframe,
-                    currentDay = currentDayOfMonth,
-                    entryDays = entryDays
+                    entryDays = entryDays,
+                    weekStartCal = weekStartCal,
+                    calendarState = calendarState
                 )
             }
 
@@ -302,7 +359,7 @@ private fun TimeframeSegmentedControl(
 
 @Composable
 private fun MonthNavigationHeader(
-    currentMonth: String,
+    displayText: String,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     onCalendarClick: () -> Unit,
@@ -323,7 +380,7 @@ private fun MonthNavigationHeader(
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     painter = painterResource(id = R.drawable.chevron_left_24px),
-                    contentDescription = "Previous Month",
+                    contentDescription = "Previous",
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(18.dp)
                 )
@@ -333,7 +390,7 @@ private fun MonthNavigationHeader(
         Spacer(modifier = Modifier.width(20.dp))
 
         Text(
-            text = currentMonth,
+            text = displayText,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onBackground
@@ -351,7 +408,7 @@ private fun MonthNavigationHeader(
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     painter = painterResource(id = R.drawable.chevron_right_24px),
-                    contentDescription = "Next Month",
+                    contentDescription = "Next",
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(18.dp)
                 )
@@ -375,7 +432,7 @@ private fun JournalStatsCard(
     mostActiveTime: String,
     totalEntries: Int,
     writingStreakDays: Int,
-    topTopic: String,
+    topTopic: String?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -397,48 +454,50 @@ private fun JournalStatsCard(
                 StatColumn(value = "$writingStreakDays days", label = "Writing\nstreak")
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-            )
+            if (topTopic != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(44.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.explore_24px),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(24.dp)
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.explore_24px),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column {
+                        Text(
+                            text = topTopic,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Top journal topic",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column {
-                    Text(
-                        text = topTopic,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Top journal topic",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }
@@ -475,10 +534,13 @@ private fun StatColumn(
 @Composable
 private fun YourMoodsCard(
     timeframe: InsightsTimeframe,
-    currentDay: Int,
     entryDays: Set<Int>,
+    weekStartCal: Calendar,
+    calendarState: Calendar,
     modifier: Modifier = Modifier
 ) {
+    val todayCalendar = remember { Calendar.getInstance() }
+
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
@@ -523,28 +585,70 @@ private fun YourMoodsCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             if (timeframe == InsightsTimeframe.WEEK) {
-                val weekDates = listOf(21, 22, 23, 24, 25, 26, 27)
+                val weekCalendars = (0..6).map { dayOffset ->
+                    (weekStartCal.clone() as Calendar).apply {
+                        add(Calendar.DAY_OF_MONTH, dayOffset)
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    weekDates.forEach { date ->
+                    weekCalendars.forEach { cellCal ->
+                        val date = cellCal.get(Calendar.DAY_OF_MONTH)
+                        val isToday = cellCal.get(Calendar.DAY_OF_MONTH) == todayCalendar.get(Calendar.DAY_OF_MONTH) &&
+                                cellCal.get(Calendar.MONTH) == todayCalendar.get(Calendar.MONTH) &&
+                                cellCal.get(Calendar.YEAR) == todayCalendar.get(Calendar.YEAR)
+
                         CalendarDayCell(
                             date = date,
-                            isCurrentDay = date == currentDay,
+                            isCurrentDay = isToday,
                             hasJournalEntry = entryDays.contains(date)
                         )
                     }
                 }
             } else {
-                val monthGrid = listOf(
-                    listOf(1, 2, 3, 4, 5, 6, 7),
-                    listOf(8, 9, 10, 11, 12, 13, 14),
-                    listOf(15, 16, 17, 18, 19, 20, 21),
-                    listOf(22, 23, 24, 25, 26, 27, 28),
-                    listOf(29, 30)
-                )
+                val monthCal = (calendarState.clone() as Calendar).apply {
+                    set(Calendar.DAY_OF_MONTH, 1)
+                }
+                val daysInMonth = monthCal.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+                val dayOfWeek = monthCal.get(Calendar.DAY_OF_WEEK)
+                val startOffset = if (dayOfWeek == Calendar.SUNDAY) 6 else dayOfWeek - 2
+
+                val monthGrid = remember(calendarState.timeInMillis) {
+                    val grid = mutableListOf<List<Int?>>()
+                    var currentDayCounter = 1
+                    var currentWeek = mutableListOf<Int?>()
+
+                    repeat(startOffset) {
+                        currentWeek.add(null)
+                    }
+
+                    while (currentDayCounter <= daysInMonth) {
+                        currentWeek.add(currentDayCounter)
+                        currentDayCounter++
+
+                        if (currentWeek.size == 7) {
+                            grid.add(currentWeek)
+                            currentWeek = mutableListOf()
+                        }
+                    }
+
+                    if (currentWeek.isNotEmpty()) {
+                        while (currentWeek.size < 7) {
+                            currentWeek.add(null)
+                        }
+                        grid.add(currentWeek)
+                    }
+
+                    grid
+                }
+
+                val isViewingCurrentMonth = calendarState.get(Calendar.MONTH) == todayCalendar.get(Calendar.MONTH) &&
+                        calendarState.get(Calendar.YEAR) == todayCalendar.get(Calendar.YEAR)
 
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     monthGrid.forEach { week ->
@@ -554,14 +658,15 @@ private fun YourMoodsCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             week.forEach { date ->
-                                CalendarDayCell(
-                                    date = date,
-                                    isCurrentDay = date == currentDay,
-                                    hasJournalEntry = entryDays.contains(date)
-                                )
-                            }
-                            if (week.size < 7) {
-                                repeat(7 - week.size) {
+                                if (date != null) {
+                                    val isToday = isViewingCurrentMonth && date == todayCalendar.get(Calendar.DAY_OF_MONTH)
+
+                                    CalendarDayCell(
+                                        date = date,
+                                        isCurrentDay = isToday,
+                                        hasJournalEntry = entryDays.contains(date)
+                                    )
+                                } else {
                                     Spacer(modifier = Modifier.width(36.dp))
                                 }
                             }
