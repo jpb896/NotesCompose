@@ -30,6 +30,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.cahier.core.data.NoteType
 import com.example.cahier.core.ui.CahierTextureBitmapStore
 import com.example.cahier.developer.brushgraph.ui.BrushGraphScreen
 import com.example.cahier.features.drawing.DrawingCanvas
@@ -95,7 +96,21 @@ fun CahierNavHost(
             EntriesScreen(
                 notes = notes,
                 onNoteClick = { note ->
-                    navController.navigate("${TextCanvasDestination.route}/${note.id}")
+                    if (note.type == NoteType.Drawing) {
+                        navController.navigate("${DrawingCanvasDestination.route}/${note.id}")
+                    } else {
+                        navController.navigate("${TextCanvasDestination.route}/${note.id}")
+                    }
+                },
+                onNewTextNoteClick = {
+                    homeViewModel.addNote { newNoteId ->
+                        navController.navigate("${TextCanvasDestination.route}/$newNoteId")
+                    }
+                },
+                onNewDrawingNoteClick = {
+                    homeViewModel.addDrawingNote { newNoteId ->
+                        navController.navigate("${DrawingCanvasDestination.route}/$newNoteId")
+                    }
                 },
                 modifier = Modifier.fillMaxSize()
             )
