@@ -21,7 +21,10 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ExperimentalComposeApi
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -30,10 +33,13 @@ import androidx.navigation.navArgument
 import com.example.cahier.core.ui.CahierTextureBitmapStore
 import com.example.cahier.developer.brushgraph.ui.BrushGraphScreen
 import com.example.cahier.features.drawing.DrawingCanvas
+import com.example.cahier.features.entries.EntriesScreen
 import com.example.cahier.features.home.CahierTab
 import com.example.cahier.features.home.HomeDestination
 import com.example.cahier.features.home.HomePane
 import com.example.cahier.features.home.SettingsScreen
+import com.example.cahier.features.home.viewmodel.HomeScreenViewModel
+import com.example.cahier.features.insights.InsightsScreen
 import com.example.cahier.features.text.TextNoteCanvasScreen
 
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -43,7 +49,11 @@ fun CahierNavHost(
     navController: NavHostController,
     textureStore: CahierTextureBitmapStore,
     modifier: Modifier = Modifier,
+    homeViewModel: HomeScreenViewModel = hiltViewModel()
 ) {
+    val noteListState by homeViewModel.noteList.collectAsStateWithLifecycle()
+    val notes = noteListState.noteList
+
     NavHost(
         navController = navController,
         startDestination = HomeDestination.route,
@@ -69,37 +79,26 @@ fun CahierNavHost(
 
         // Bottom Bar Destination: Entries
         composable(CahierTab.Entries.route) {
-            HomePane(
-                navigateToCanvas = { noteId ->
-                    navController.navigate("${TextCanvasDestination.route}/$noteId")
+            EntriesScreen(
+                notes = notes,
+                onNoteClick = { note ->
+                    navController.navigate("${TextCanvasDestination.route}/${note.id}")
                 },
-                navigateToDrawingCanvas = { noteId ->
-                    navController.navigate("${DrawingCanvasDestination.route}/$noteId")
-                },
-                navigateUp = {
-                    navController.navigateUp()
-                },
-                navigateToBrushGraph = {
-                    navController.navigate(BrushGraphDestination.route)
-                }
+                modifier = Modifier.fillMaxSize()
             )
         }
 
         // Bottom Bar Destination: Insights
         composable(CahierTab.Insights.route) {
-            HomePane(
-                navigateToCanvas = { noteId ->
-                    navController.navigate("${TextCanvasDestination.route}/$noteId")
+            InsightsScreen(
+                notes = notes,
+                onSearchClick = {
+                    /* Handle search navigation */
                 },
-                navigateToDrawingCanvas = { noteId ->
-                    navController.navigate("${DrawingCanvasDestination.route}/$noteId")
+                onProfileClick = {
+                    /* Handle profile navigation */
                 },
-                navigateUp = {
-                    navController.navigateUp()
-                },
-                navigateToBrushGraph = {
-                    navController.navigate(BrushGraphDestination.route)
-                }
+                modifier = Modifier.fillMaxSize()
             )
         }
 
