@@ -76,6 +76,7 @@ fun JournalHomeScreen(
     otherNotes: List<Note>,
     bookmarks: List<Note>,
     onNoteClick: (Note) -> Unit,
+    onBookmarkToggle: (Note) -> Unit,
     onNewTextNoteClick: () -> Unit,
     onNewDrawingNoteClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -188,7 +189,8 @@ fun JournalHomeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 HeroJournalCard(
                     note = note,
-                    onClick = { onNoteClick(note) }
+                    onClick = { onNoteClick(note) },
+                    onBookmarkToggle = { onBookmarkToggle(note) }
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -205,7 +207,8 @@ fun JournalHomeScreen(
                 bookmarks.forEach { note ->
                     CompactJournalRow(
                         note = note,
-                        onClick = { onNoteClick(note) }
+                        onClick = { onNoteClick(note) },
+                        onBookmarkToggle = { onBookmarkToggle(note) }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -221,7 +224,8 @@ fun JournalHomeScreen(
                 otherNotes.forEach { note ->
                     CompactJournalRow(
                         note = note,
-                        onClick = { onNoteClick(note) }
+                        onClick = { onNoteClick(note) },
+                        onBookmarkToggle = { onBookmarkToggle(note) }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -237,6 +241,7 @@ fun JournalHomeScreen(
 fun HeroJournalCard(
     note: Note,
     onClick: () -> Unit,
+    onBookmarkToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val monthFormat = remember { SimpleDateFormat("MMM", Locale.getDefault()) }
@@ -291,19 +296,17 @@ fun HeroJournalCard(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Indicator Badge
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    modifier = Modifier.size(32.dp)
+                // Bookmark Toggle Button
+                IconButton(
+                    onClick = onBookmarkToggle,
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         painter = painterResource(
-                            id = if (note.type == NoteType.Drawing) R.drawable.ic_drawing_mode else R.drawable.bookmark_24px
+                            id = if (note.isFavorite) R.drawable.bookmark_24px_filled else R.drawable.bookmark_24px
                         ),
-                        contentDescription = null,
-                        modifier = Modifier.padding(6.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        contentDescription = if (note.isFavorite) "Remove bookmark" else "Bookmark note",
+                        tint = if (note.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -508,6 +511,7 @@ fun HeroJournalCard(
 fun CompactJournalRow(
     note: Note,
     onClick: () -> Unit,
+    onBookmarkToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val formattedDate = remember(note.dateCreated) {
@@ -605,13 +609,13 @@ fun CompactJournalRow(
             }
 
             // Action Icon
-            IconButton(onClick = { /* Toggle bookmark or options */ }) {
+            IconButton(onClick = onBookmarkToggle) {
                 Icon(
                     painter = painterResource(
                         id = if (note.isFavorite) R.drawable.bookmark_24px_filled else R.drawable.bookmark_24px
                     ),
-                    contentDescription = "Bookmark",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    contentDescription = if (note.isFavorite) "Remove bookmark" else "Bookmark note",
+                    tint = if (note.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

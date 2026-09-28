@@ -288,6 +288,7 @@ private fun ListPaneContent(
         otherNotes = otherNotes,
         bookmarks = bookmarks,
         onNoteClick = onNoteClick,
+        onBookmarkToggle = { note -> onToggleFavorite(note.id) },
         onNewTextNoteClick = onAddNewTextNote,
         onNewDrawingNoteClick = onAddNewDrawingNote,
         modifier = modifier.testTag("List")
