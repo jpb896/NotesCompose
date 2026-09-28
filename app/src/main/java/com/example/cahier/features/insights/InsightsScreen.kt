@@ -435,6 +435,8 @@ private fun JournalStatsCard(
     topTopic: String?,
     modifier: Modifier = Modifier
 ) {
+    val streakText = if (writingStreakDays == 1) "1 day" else "$writingStreakDays days"
+
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
@@ -451,7 +453,7 @@ private fun JournalStatsCard(
             ) {
                 StatColumn(value = mostActiveTime, label = "Most active\ntime")
                 StatColumn(value = totalEntries.toString(), label = "Total entries")
-                StatColumn(value = "$writingStreakDays days", label = "Writing\nstreak")
+                StatColumn(value = streakText, label = "Writing\nstreak")
             }
 
             if (topTopic != null) {
@@ -554,7 +556,7 @@ private fun YourMoodsCard(
                 .padding(20.dp)
         ) {
             Text(
-                text = "Your moods",
+                text = "Your statistics",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
